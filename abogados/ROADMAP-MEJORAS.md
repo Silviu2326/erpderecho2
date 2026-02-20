@@ -1,674 +1,703 @@
-# Roadmap de Mejoras - ERP Legal
-## Fases de Implementación UX/UI
+# Roadmap de Mejoras UX/UI - 15 Páginas del ERP Legal
+
+**Versión:** 1.0  
+**Fecha:** 2026-02-20  
+**Alcance:** Solo las 15 páginas creadas en este proyecto
 
 ---
 
-## 🎯 Visión General
+## 📋 Las 15 Páginas Creadas
 
-Este roadmap contiene **30 fases** organizadas en 6 grandes áreas de mejora:
-- **Experiencia de Usuario (UX)**
-- **Interfaz de Usuario (UI)**
-- **Rendimiento**
-- **Accesibilidad**
-- **Integración**
-- **Mantenibilidad**
-
----
-
-# FASE 1: Fundamentos UI/UX (Semana 1-2)
-
-## 🔵 FASE 1.1: Sistema de Diseño Unificado
-
-### 1. Paleta de Colores Consistente
-- [ ] **Objetivo:** Crear sistema de colores semántico
-- [ ] **Acciones:**
-  - Definir colores primarios, secundarios, de acento
-  - Colores semánticos (success, error, warning, info)
-  - Modo oscuro/claro completo
-  - Variables CSS centralizadas
-- [ ] **Resultado esperado:** `theme.css` con todas las variables
-
-### 2. Sistema de Tipografía
-- [ ] **Objetivo:** Tipografía consistente
-- [ ] **Acciones:**
-  - Definir escala tipográfica (h1-h6, body, small)
-  - Font stack optimizado
-  - Line-height y letter-spacing coherentes
-  - Responsive font sizes
-- [ ] **Resultado esperado:** Sistema tipográfico escalable
-
-### 3. Espaciado y Grid
-- [ ] **Objetivo:** Espaciado coherente
-- [ ] **Acciones:**
-  - Sistema de spacing (4, 8, 12, 16, 24, 32, 48, 64, 96)
-  - Grid de 12 columnas
-  - Container sizes estándar
-  - Gutter consistente
-- [ ] **Resultado esperado:** Layout consistente
-
-### 4. Componentes Base
-- [ ] **Objetivo:** Biblioteca de componentes reutilizables
-- [ ] **Acciones:**
-  - Button (primary, secondary, ghost, danger)
-  - Input, Select, Textarea
-  - Card, Modal, Dropdown
-  - Table con variantes
-  - Badge, Avatar, Tooltip
-  - Toast notifications
-- [ ] **Resultado esperado:** Storybook de componentes
+| # | Página | Módulo | Ruta |
+|---|--------|---------|------|
+| 1 | Prescripciones | M1 - Core Legal | `/core/prescripciones` |
+| 2 | Buscar | M2 - Gestión Documental | `/documentos/buscar` |
+| 3 | OCR | M2 - Gestión Documental | `/documentos/ocr` |
+| 4 | Proveedores | M4 - Cobranza | `/cobranza/proveedores` |
+| 5 | Cobranza/Config | M4 - Cobranza | `/cobranza/config` |
+| 6 | Tiempo/Informes | M5 - Tiempo | `/tiempo/informes` |
+| 7 | Juzgados | M6 - Comunicaciones | `/comunicaciones/juzgados` |
+| 8 | Notificaciones | M6 - Comunicaciones | `/comunicaciones/notificaciones` |
+| 9 | Chat IA | M11 - IA Legal | `/ia/chat` |
+| 10 | Generador Escritos | M11 - IA Legal | `/ia/generador` |
+| 11 | Rentabilidad | M3 - Finanzas | `/finanzas/rentabilidad` |
+| 12 | Búsqueda Semántica | M11 - IA Legal | `/ia/busqueda` |
+| 13 | Verificar Documentos | M12 - Forense | `/forense/verificar` |
+| 14 | Informes Periciales | M12 - Forense | `/forense/informes` |
+| 15 | LexNET | M13 - Integraciones | `/integraciones/lexnet` |
 
 ---
 
-## 🔵 FASE 1.2: Estados y Feedback
+## 🎨 Sistema de Diseño Actual (Mantener)
 
-### 5. Skeleton Loaders
-- [ ] **Objetivo:** Feedback visual durante carga
-- [ ] **Acciones:**
-  - Skeleton para tablas
-  - Skeleton para cards
-  - Skeleton para formularios
-  - Skeleton para gráficos
-  - Animación de pulse suave
-- [ ] **Resultado esperado:** Pantallas de carga atractivas
+### Colores del Tema
+- **Primary:** `#6366f1` (Indigo-500) - `--color-accent`
+- **Background:** `#0f172a` (Slate-900) dark / `#f8fafc` light
+- **Surface:** `#1e293b` (Slate-800) dark / `#ffffff` light
+- **Border:** `#334155` (Slate-700) dark / `#e2e8f0` light
+- **Success:** Emerald-400
+- **Warning:** Amber-400
+- **Error:** Red-400
 
-### 6. Empty States
-- [ ] **Objetivo:** Guía cuando no hay datos
-- [ ] **Acciones:**
-  - Ilustraciones para cada sección
-  - Mensajes contextuales
-  - CTAs claros para cada estado
-  - Ejemplos de datos
-- [ ] **Resultado esperado:** Empty states informativos
-
-### 7. Estados de Error
-- [ ] **Objetivo:** Manejo elegante de errores
-- [ ] **Acciones:**
-  - Error boundaries por sección
-  - Mensajes de error amigables
-  - Acciones de recuperación
-  - Error state para formularios
-  - Retry automático donde aplique
-- [ ] **Resultado esperado:** Errores que educan al usuario
-
-### 8. Estados de Éxito
-- [ ] **Objetivo:** Celebrar acciones completadas
-- [ ] **Acciones:**
-  - Animaciones de success
-  - Confirmaciones visuales
-  - Progress indicators
-  - Celebraciones (micro-interacciones)
-- [ ] **Resultado esperado:** Feedback positivo satisfactorio
+### Roles Existentes
+- super_admin, socio, abogado_senior, abogado_junior
+- paralegal, secretario, administrador, contador, recepcionista, cliente
 
 ---
 
-## 🔵 FASE 1.3: Navegación Mejorada
-
-### 9. Sidebar Responsive
-- [ ] **Objetivo:** Navegación funcional en todos los dispositivos
-- [ ] **Acciones:**
-  - Sidebar como drawer en móvil
-  - Hamburger menu
-  - Swipe para abrir/cerrar
-  - Overlay con backdrop
-  - Persistencia de estado
-- [ ] **Resultado esperado:** Navegación perfecta en móvil
-
-### 10. Breadcrumbs
-- [ ] **Objetivo:** Contexto de ubicación
-- [ ] **Acciones:**
-  - Breadcrumbs dinámicos
-  - Clickable para navegación
-  - Truncado inteligente
-  - Responsive collapse
-- [ ] **Resultado esperado:** Siempre saber dónde estás
-
-### 11. Quick Actions
-- [ ] **Objetivo:** Acceso rápido a funciones frecuentes
-- [ ] **Acciones:**
-  - Command palette (Ctrl+K)
-  - Search global
-  - Favoritos en sidebar
-  - Recientes
-  - Keyboard shortcuts
-- [ ] **Resultado esperado:** Acciones a un click/keypress
-
-### 12. Menú de Usuario
-- [ ] **Objetivo:** Acceso a perfil y configuración
-- [ ] **Acciones:**
-  - Dropdown con avatar
-  - Configuración rápida
-  - Cambio de rol (demo)
-  - Theme toggle
-  - Logout
-- [ ] **Resultado esperado:** Perfil accesible
+## 🚀 30 Fases de Mejora (Enfocadas en las 15 Páginas)
 
 ---
 
-# FASE 2: Interactividad (Semana 3-4)
+## 🔵 FASE 1: Skeleton Loaders (Semana 1)
 
-## 🔵 FASE 2.1: Formularios Mejorados
+### 1.1 Skeletons para Tablas
+- [ ] **Prescripciones** - Skeleton en tabla de expedientes
+- [ ] **Buscar** - Skeleton en resultados de búsqueda
+- [ ] **Proveedores** - Skeleton en grid de proveedores
+- [ ] **Tiempo/Informes** - Skeleton en tablas de productividad
+- [ ] **Rentabilidad** - Skeleton en tablas de rentabilidad
 
-### 13. Validación en Tiempo Real
-- [ ] **Objetivo:** Feedback inmediato en formularios
-- [ ] **Acciones:**
-  - Validación on-blur y on-change
-  - Mensajes de error inline
-  - Indicadores visuales (checkmarks, x)
-  - Tooltips explicativos
-  - Ejemplos de formato válido
-- [ ] **Resultado esperado:** Formularios que guían
+### 1.2 Skeletons para Cards
+- [ ] **Chat IA** - Skeleton en mensajes
+- [ ] **LexNET** - Skeleton en bandeja de entrada
+- [ ] **Notificaciones** - Skeleton en lista de notificaciones
+- [ ] **Verificar Documentos** - Skeleton en resultado de verificación
 
-### 14. Wizards y Multi-step Forms
-- [ ] **Objetivo:** Formularios complejos digeribles
-- [ ] **Acciones:**
-  - Progress indicator
-  - Save draft automático
-  - Navegación entre pasos
-  - Validación por paso
-  - Resume later
-- [ ] **Resultado esperado:** Forms largos sin overwhelm
-
-### 15. Auto-save
-- [ ] **Objetivo:** Nunca perder trabajo
-- [ ] **Acciones:**
-  - Auto-guardado cada 30 segundos
-  - Indicador de guardado
-  - Recover draft al volver
-  - Historial de versiones local
-- [ ] **Resultado esperado:** Seguridad de datos
+### 1.3 Skeletons para Formularios
+- [ ] **OCR** - Skeleton al procesar imagen
+- [ ] **Generador Escritos** - Skeleton al generar documento
+- [ ] **Cobranza/Config** - Skeleton al cargar configuración
 
 ---
 
-## 🔵 FASE 2.2: Tablas y Datos
+## 🔵 FASE 2: Estados Vacíos (Semana 1)
 
-### 16. Tablas Avanzadas
-- [ ] **Objetivo:** Manipulación de datos potente
-- [ ] **Acciones:**
-  - Sort multi-column
-  - Filtros por columna
-  - Column visibility toggle
-  - Resizable columns
-  - Sticky header
-  - Virtual scrolling
-  - Row selection
-  - Bulk actions
-- [ ] **Resultado esperado:** Tables como Excel/Sheets
+### 2.1 Empty States para Búsquedas
+- [ ] **Buscar** - Ilustración + mensaje + sugerencias de búsqueda
+- [ ] **Búsqueda Semántica** - Ilustración + ejemplos de consultas
 
-### 17. Pagination Inteligente
-- [ ] **Objetivo:** Navegación de resultados fluida
-- [ ] **Acciones:**
-  - Infinite scroll opcional
-  - Page size selector
-  - "Ir a página"
-  - Mostrando X-Y de Z
-  - Previous/Next buttons
-  - Keyboard navigation
-- [ ] **Resultado esperado:** Datos accesibles
+### 2.2 Empty States para Lists
+- [ ] **Proveedores** - "No hay proveedores. Añade el primero"
+- [ ] **Notificaciones** - "No tienes notificaciones"
+- [ ] **Informes Periciales** - "No hay informes generados"
 
-### 18. Búsqueda Global
-- [ ] **Objetivo:** Encontrar cualquier cosa
-- [ ] **Acciones:**
-  - Search everywhere (Ctrl+K)
-  - Filtros avanzada
-  - Búsqueda por tipos
-  - Recientes
-  - Sugerencias
-  - Highlights en resultados
-- [ ] **Resultado esperado:** Search como Spotlight/MacOS
+### 2.3 Empty States para Detalles
+- [ ] **Juzgados** - "No hay comunicaciones"
+- [ ] **Verificar Documentos** - "Sube un documento para verificar"
 
 ---
 
-## 🔵 FASE 2.3: Visualización de Datos
+## 🔵 FASE 3: Persistencia LocalStorage (Semana 2)
 
-### 19. Dashboard Interactivo
-- [ ] **Objetivo:** Información de un vistazo
-- [ ] **Acciones:**
-  - KPI cards con trend
-  - Gráficos interactivos
-  - Drill-down clicks
-  - Date range picker
-  - Refresh automático
-  - Layout personalizable
-- [ ] **Resultado máximo:** Dashboard accionable
+### 3.1 Guardar Filtros
+- [ ] **Prescripciones** - Guardar tipo/estado seleccionados
+- [ ] **Proveedores** - Guardar categoría/filtros
+- [ ] **Buscar** - Guardar últimos filtros usados
+- [ ] **Rentabilidad** - Guardar mes/vista seleccionados
 
-### 20. Gráficos Avanzados
-- [ ] **Objetivo:** Visualizaciones potentes
-- [ ] **Acciones:**
-  - Gráficos de línea, barra, pie, área
-  - Tooltips ricos
-  - Leyendas interactivas
-  - Export a imagen
-  - Responsive charts
-  - Animaciones suaves
-- [ ] **Resultado:** Gráficos que cuentan historias
+### 3.2 Guardar Preferencias UI
+- [ ] **Sidebar** - Estado expandido de módulos
+- [ ] **Chat IA** - Guardar historial de conversación
+- [ ] **Notificaciones** - Guardar pestaña activa
+
+### 3.3 Guardar Datos de Formularios
+- [ ] **OCR** - Recordar última configuración
+- [ ] **Generador Escritos** - Auto-guardar borrador
+- [ ] **Cobranza/Config** - Persistir configuración
 
 ---
 
-# FASE 3: Animaciones y Micro-interacciones (Semana 5-6)
+## 🔵 FASE 4: Mejoras de Tablas (Semana 2-3)
 
-## 🔵 FASE 3.1: Transiciones
+### 4.1 Sorting
+- [ ] **Prescripciones** - Ordenar por fecha, estado, días restantes
+- [ ] **Proveedores** - Ordenar por nombre, rating, facturación
+- [ ] **Tiempo/Informes** - Ordenar por abogado, horas, eficiencia
 
-### 21. Page Transitions
-- [ ] **Objetivo:** Navegación fluida entre páginas
-- [ ] **Acciones:**
-  - Fade transitions
-  - Slide transitions
-  - Shared element transitions
-  - Loading states entre rutas
-  - Skeleton de transición
-- [ ] **Resultado:** App que se siente como SPA fluida
+### 4.2 Column Visibility
+- [ ] **Prescripciones** - Toggle columnas visibles
+- [ ] **Rentabilidad** - Mostrar/ocultar columnas
+- [ ] **Proveedores** - Personalizar vista
 
-### 22. Accordions y Expandables
-- [ ] **Objetivo:** Contenido expansible elegante
-- [ ] **Acciones:**
-  - Smooth height animation
-  - Accordeon group
-  - Nested expandables
-  - Keyboard accessible
-  - Remember state
-- [ ] **Resultado:** UIclean pero informativa
-
-### 23. Modal Transitions
-- [ ] **Objetivos:** Modales atractivos
-- [ ] **Acciones:**
-  - Backdrop blur
-  - Scale + fade entrance
-  - Focus trap
-  - Click outside to close
-  - Escape key
-  - Swipe to dismiss (mobile)
-- [ ] **Resultado:** Modales que feel native
+### 4.3 Pagination
+- [ ] **Buscar** - Implementar paginación real
+- [ ] **Proveedores** - Añadir selector de página
+- [ ] **Juzgados** - Infinite scroll o pagination
 
 ---
 
-## 🔵 FASE 3.2: Micro-interacciones
+## 🔵 FASE 5: Búsqueda y Filtros (Semana 3)
 
-### 24. Button Feedback
-- [ ] **Objetivo:** Botones que responden
-- [ ] **Acciones:**
-  - Hover states
-  - Click/press states
-  - Loading spinners
-  - Success checkmarks
-  - Ripple effects
-  - Disabled states
-- [ ] **Resultado:** Botones satisfactorios
+### 5.1 Search en Tiempo Real
+- [ ] **Proveedores** - Debounced search
+- [ ] **Notificaciones** - Filter en tiempo real
+- [ ] **Informes Periciales** - Search instantáneo
 
-### 25. Form Feedback
-- [ ] **Objetivo:** Forms que se sienten vivos
-- [ ] **Acciones:**
-  - Character counters
-  - Password strength meter
-  - Auto-formatting (teléfono, fecha, etc.)
-  - Success animations
-  - Error shake
-  - Focus states claros
-- [ ] **Resultado:** Forms agradables
+### 5.2 Filtros Avanzados
+- [ ] **Prescripciones** - Filtros combinados (tipo + estado + abogado)
+- [ ] **Tiempo/Informes** - Filtro por rango de fechas
+- [ ] **Rentabilidad** - Filtro por período
 
-### 26. Drag and Drop
-- [ ] **Objetivo:** Interacción intuitiva
-- [ ] **Acciones:**
-  - Kanban drag & drop
-  - File upload drag
-  - Reorder lists
-  - Visual drop zones
-  - Touch support
-- [ ] **Resultado:** D&D natural como desktop
+### 5.3 Búsqueda Global
+- [ ] Implementar Ctrl+K para búsqueda global
+- [ ] Buscar en todas las 15 páginas
+- [ ] Resultados categorizados por página
 
 ---
 
-# FASE 4: Accesibilidad y Rendimiento (Semana 7-8)
+## 🔵 FASE 6: Estados de Error (Semana 3)
 
-## 🔵 FASE 4.1: Accesibilidad
+### 6.1 Manejo de Errores API
+- [ ] **OCR** - Error al procesar imagen (tamaño, formato)
+- [ ] **Chat IA** - Error de conexión con IA
+- [ ] **LexNET** - Error de sincronización
 
-### 27. Keyboard Navigation
-- [ ] **Objetivo:** Navegación 100% sin ratón
-- [ ] **Acciones:**
-  - Tab order logical
-  - Focus indicators visibles
-  - Skip links
-  - Keyboard shortcuts globales
-  - Focus trap en modales
-  - Arrow keys en menús
-- [ ] **Resultado:** WCAG AA mínimo
+### 6.2 Validación de Formularios
+- [ ] **Generador Escritos** - Validar campos requeridos
+- [ ] **Proveedores** - Validar CIF único
+- [ ] **Verificar Documentos** - Validar tipo de archivo
 
-### 28. Screen Reader Support
-- [ ] **Objetivo:** Compatible con lectores de pantalla
-- [ ] **Acciones:**
-  - ARIA labels correctos
-  - Live regions para updates
-  - Semantic HTML
-  - Alt texts
-  - Announcements para acciones
-- [ ] **Resultado:** Inclusivo
-
-### 29. Contrast y Legibilidad
-- [ ] **Objetivo:** Fácil de leer
-- [ ] **Acciones:**
-  - Contrast ratio 4.5:1 mínimo
-  - Focus contrast 3:1
-  - Text sizing legible
-  - Line length óptima (60-80 chars)
-  - Line height 1.5 mínimo
-- [ ] **Resultado:** Legibilidad óptima
+### 6.3 Estados de Error UI
+- [ ] Crear componente ErrorState reutilizable
+- [ ] Añadir a todas las páginas que consumen datos
+- [ ] Botones de retry
 
 ---
 
-## 🔵 FASE 4.2: Rendimiento
+## 🔵 FASE 7: Interactividad en Formularios (Semana 4)
 
-### 30. Optimización de Carga
-- [ ] **Objetivo:** App instantánea
-- [ ] **Acciones:**
-  - Code splitting por rutas
-  - Lazy loading de componentes
-  - Image optimization
-  - Bundle size < 500KB
-  - First contentful paint < 1.5s
-  - Time to interactive < 3s
-- [ ] **Resultado:** App ultrarrápida
+### 7.1 Validación en Tiempo Real
+- [ ] **Proveedores** - Validar email, teléfono
+- [ ] **Generador Escritos** - Preview en tiempo real
+- [ ] **Cobranza/Config** - Validar configuración
 
-### 31. Virtual Scrolling
-- [ ] **Objetivo:** Listas largas sin lag
-- [ ] **Acciones:**
-  - Virtual scroll en tablas grandes
-  - Ventana de renderizado
-  - Memoización de rows
-  - Pagination + virtual hybrid
-- [ ] **Resultado:** Listas de miles de items smooth
+### 7.2 Auto-save
+- [ ] **Generador Escritos** - Guardar cada 30 segundos
+- [ ] **OCR** - Recordar datos extraídos
+- [ ] **Verificar Documentos** - Guardar historial
 
-### 32. Optimización de Re-renders
-- [ ] **Objetivo:** UI reactiva eficiente
-- [ ] **Acciones:**
-  - React.memo where needed
-  - useCallback/useMemo correcto
-  - Debounce search
-  - Throttle scrolls
-  - Zustand/Selectors optimizados
-- [ ] **Resultado:** 60fps constante
+### 7.3 Wizard Forms
+- [ ] **Proveedores** - Formulario en pasos
+- [ ] **Cobranza/Config** - Configuración por pasos
 
 ---
 
-# FASE 5: Funcionalidad Avanzada (Semana 9-10)
+## 🔵 FASE 8: Optimización de Carga (Semana 4)
 
-## 🔵 FASE 5.1: Notificaciones y Alerts
+### 8.1 Lazy Loading
+- [ ] **Chat IA** - Cargar componente solo cuando se usa
+- [ ] **OCR** - Importar biblioteca OCR lazily
+- [ ] **Gráficos** - Lazy load de Recharts
 
-### 33. Sistema de Toast Notifications
-- [ ] **Objetivo:** Feedback no obstructivo
-- [ ] **Acciones:**
-  - Toast container
-  - Success/error/warning/info
-  - Auto-dismiss configurable
-  - Action buttons
-  - Stack de toasts
-  - Progress bar
-  - Mobile responsive
-- [ ] **Resultado:** Notificaciones tasteful
+### 8.2 Memoización
+- [ ] **Tablas** - React.memo en filas
+- [ ] **Listas** - useMemo para filtering
+- [ ] **Chat** - Optimizar re-renders
 
-### 34. Notificaciones Real-time
-- [ ] **Objetivo:** Actualizaciones live
-- [ ] **Acciones:**
-  - Badge en sidebar
-  - Dropdown de notificaciones
-  - Mark as read
-  - Grouped notifications
-  - Push notifications
-  - Email digests
-- [ ] **Resultado:** Siempre actualizado
+### 8.3 Optimización de Imágenes
+- [ ] **Verificar Documentos** - Compresión de uploaded
+- [ ] **OCR** - Preview thumbnails
+- [ ] **Proveedores** - Avatares optimizados
 
 ---
 
-## 🔵 FASE 5.2: Persistencia y Estado
+## 🔵 FASE 9: Navegación y Breadcrumbs (Semana 5)
 
-### 35. Persistencia de UI
-- [ ] **Objetivo:** Estado persistente
-- [ ] **Acciones:**
-  - Sidebar collapsed state
-  - Theme preference
-  - Table preferences (sort, columns)
-  - Filters guardados
-  - Recent items
-  - Draft forms
-- [ ] **Resultado:** App remembers you
+### 9.1 Breadcrumbs Dinámicos
+- [ ] **Prescripciones** - Home > Core Legal > Prescripciones
+- [ ] **Proveedores** - Home > Cobranza > Proveedores
+- [ ] **Rentabilidad** - Home > Finanzas > Rentabilidad
 
-### 36. Estado Global
-- [ ] **Objetivo:** Estado compartido
-- [ ] **Acciones:**
-  - Zustand store
-  - User context
-  - Theme context
-  - UI preferences context
-  - Sync across tabs
-- [ ] **Resultado:** Estado predecible
+### 9.2 Quick Navigation
+- [ ] Breadcrumbs clickeables
+- [ ] Añadir a sidebar items relacionados
+- [ ] Links cruzados entre páginas
+
+### 9.3 History Navigation
+- [ ] Volver al estado anterior de filtros
+- [ ] Back button funciona correctamente
 
 ---
 
-# FASE 6: polish Final (Semana 11-12)
+## 🔵 FASE 10: Accesibilidad - Keyboard (Semana 5)
 
-## 🔵 FASE 6.1: polish Visual
+### 10.1 Tab Navigation
+- [ ] **Todas las tablas** - Navegación con flechas
+- [ ] **Todas las páginas** - Skip to content
+- [ ] **Sidebar** - Navegación por teclado
 
-### 37. Ilustraciones y Imágenes
-- [ ] **Objetivo:** UI más humano
-- [ ] **Acciones:**
-  - Empty state illustrations
-  - Error page illustrations
-  - Success illustrations
-  - Onboarding visuals
-  - Consistent art style
-- [ ] **Resultado:** UI con personalidad
+### 10.2 Shortcuts Globales
+- [ ] `Ctrl+K` - Búsqueda global
+- [ ] `Ctrl+N` - Nuevo elemento (según página)
+- [ ] `Escape` - Cerrar modales
 
-### 38. Animaciones de Carga
-- [ ] **Objetivo:** Cargas entretenimiento
-- [ ] **Acciones:**
-  - Custom spinners
-  - Loading con branding
-  - Progress bars animate
-  - Skeleton animations
-  - Micro-loading states
-- [ ] **Resultado:** Cargas noneblocking
-
-### 39. Hover y Focus States
-- [ ] **Objetivo:** Interactivity clara
-- [ ] **Acciones:**
-  - Consistent hover colors
-  - Focus rings
-  - Touch feedback
-  - Cursor changes
-  - Tooltips informativos
-- [ ] **Resultado:** Interacción obvia
+### 10.3 Focus Management
+- [ ] Focus trap en modales
+- [ ] Focus restaurar al cerrar modal
+- [ ] Focus visible en todos los elementos interactivos
 
 ---
 
-## 🔵 FASE 6.2: Documentación
+## 🔵 FASE 11: Responsive Design (Semana 5-6)
 
-### 40. Documentación de Componentes
-- [ ] **Objetivo:** UI documentada
-- [ ] **Acciones:**
-  - Storybook setup
-  - Component docs
-  - Usage examples
-  - Props table
-  - Accessibility notes
-  - Do's and Don'ts
-- [ ] **Resultado:** Docs útiles
+### 11.1 Sidebar Mobile
+- [ ] Drawer en lugar de sidebar fijo
+- [ ] Hamburger menu
+- [ ] Overlay con backdrop
+- [ ] Swipe para abrir/cerrar
 
-### 41. Onboarding Tooltips
-- [ ] **Objetivo:** Nueva features descubribles
-- [ ] **Acciones:**
-  - Feature tour
-  - Tooltips contextual
-  - What's new modal
-  - First user experience
-  - Guided flows
-- [ ] **Resultado:** Users descubren features
+### 11.2 Tables Responsive
+- [ ] Scroll horizontal en tablas
+- [ ] Cards en móvil para tablas
+- [ ] Sticky first column
+
+### 11.3 Formularios Mobile
+- [ ] Inputs correctamente sizeados
+- [ ] Date pickers touch-friendly
+- [ ] Teclado numérico para números
 
 ---
 
-# FASE 7-30: Mejoras Continuas
+## 🔵 FASE 12: Mejoras de Rendimiento (Semana 6)
 
-## 📋 Fases Posteriores Sugeridas
+### 12.1 Virtual Scrolling
+- [ ] **Buscar** - Virtual scroll para muchos resultados
+- [ ] **Notificaciones** - Virtual scroll para historial
+- [ ] **Proveedores** - Grid virtual
 
-### FASE 7: Modo Offline
-- PWA con service workers
-- IndexedDB para datos offline
-- Sync cuando reconnect
+### 12.2 Code Splitting
+- [ ] Cada página como chunk separado
+- [ ] Cargar solo lo necesario
+- [ ] Prefetch de páginas relacionadas
 
-### FASE 8: Internacionalización
-- i18n setup
-- Spanish/English
-- Date/time localization
-- RTL support准备
-
-### FASE 9: Theming Avanzado
-- Multiple themes
-- Custom theme builder
-- Theme por módulo
-
-### FASE 10: Dashboard Builder
-- Drag & drop widgets
-- Custom layouts
-- Saved views
-
-### FASE 11: Reporting Engine
-- Report builder
-- Scheduled reports
-- Export múltiples formatos
-
-### FASE 12: Workflow Builder
-- Automations visuales
-- Triggers y acciones
-- History/audit trail
-
-### FASE 13: Collaboration
-- Comments en documentos
-- Mentions
-- Activity feed
-- Real-time presence
-
-### FASE 14: Mobile App
-- React Native
-- Push notifications
-- Offline-first
-
-### FASE 15: AI Integrations
-- Smart suggestions
-- Auto-classification
-- Predictions
-- Chat copilot
-
-### FASE 16: API Developer
-- API docs
-- Developer portal
-- Webhooks
-- Rate limits
-
-### FASE 17: Webhooks & Integrations
-- Zapier integration
-- Custom integrations
-- Middleware
-
-### FASE 18: Audit Logs
-- User actions log
-- Exportable
-- Searchable
-- Retention policies
-
-### FASE 19: двух Factor Auth
-- 2FA optional
-- Backup codes
-- Session management
-
-### FASE 20: SSO/SAML
-- SSO providers
-- SAML integration
-- Directory sync
-
-### FASE 21: Advanced Search
-- Elasticsearch
-- Faceted search
-- Search analytics
-
-### FASE 22: File Preview
-- PDF viewer
-- Image preview
-- Office docs preview
-- In-app viewing
-
-### FASE 23: Batch Operations
-- Bulk edit
-- Bulk delete
-- Bulk export
-- Progress tracking
-
-### FASE 24: Revision History
-- Version control docs
-- Compare versions
-- Restore
-- Annotations
-
-### FASE 25: Comments & Annotations
-- Inline comments
-- Document annotations
-- Resolve/reopen
-
-### FASE 26: Templates System
-- Template library
-- Template builder
-- Variable substitution
-
-### FASE 27: Workflow Approvals
-- Approval chains
-- Multi-level approvals
-- Delegation
-
-### FASE 28: Time Tracking
-- Timer widget
-- Weekly timesheet
-- Reports by project
-
-### FASE 29: Calendar Integration
-- Google Calendar sync
-- Outlook sync
-- iCal export
-
-### FASE 30: Advanced Reporting
-- Custom reports
-- Scheduled reports
-- Email reports
-- Dashboard sharing
+### 12.3 Optimización de Bundle
+- [ ] Analizar bundle size
+- [ ] Reducir dependencias
+- [ ] Tree shaking efectivo
 
 ---
 
-# 📊 Resumen DE Fases
+## 🔵 FASE 13: UI Feedback - Botones (Semana 6)
 
-| Fase | Área | Semanas | Prioridad |
-|------|------|---------|-----------|
-| 1 | Fundamentos UI/UX | 1-2 | 🔴 Alta |
-| 2 | Interactividad | 3-4 | 🔴 Alta |
-| 3 | Animaciones | 5-6 | 🟡 Media |
-| 4 | Accesibilidad/Rendimiento | 7-8 | 🔴 Alta |
-| 5 | Funcionalidad Avanzada | 9-10 | 🟡 Media |
-| 6 | Polish | 11-12 | 🟢 Baja |
-| 7-30 | Mejoras Continuas | - | 🟢 Baja |
+### 13.1 Button States
+- [ ] Hover states en todos los botones
+- [ ] Active/pressed states
+- [ ] Loading states con spinner
+- [ ] Disabled states visuales
 
----
+### 13.2 Button Variants
+- [ ] Primary, secondary, ghost, danger
+- [ ] Icon buttons
+- [ ] Group buttons
+- [ ] Split buttons (dropdown)
 
-# 🎯 Próximos Pasos
-
-## Inmediato (Esta semana):
-1. Sistema de colores unificado
-2. Skeleton loaders
-3. Empty states
-
-## Esta iteración (2 semanas):
-1. Sidebar responsive
-2. Búsqueda global (Ctrl+K)
-3. Tablas avanzadas
-
-## Esta месяц (1 mes):
-1. Todas las fases 1-4
-2. UI lista para producción
+### 13.3 Button Feedback
+- [ ] Ripple effect
+- [ ] Success animation (checkmark)
+- [ ] Error shake animation
 
 ---
 
-*Documento vivo - Actualizar según prioridades y feedback*
-*Última actualización: 2026-02-20*
+## 🔵 FASE 14: UI Feedback - Formularios (Semana 7)
+
+### 14.1 Input States
+- [ ] Focus ring con color de acento
+- [ ] Error state (rojo)
+- [ ] Success state (verde)
+- [ ] Disabled state (opacity)
+
+### 14.2 Character Counters
+- [ ] **Generador Escritos** - Contador de caracteres
+- [ ] **Notificaciones** - Asunto con límite
+- [ ] **Proveedores** - Notas con contador
+
+### 14.3 Password Strength
+- [ ] Medidor de fuerza en creation forms
+- [ ] Mostrar/ocultar toggle
+
+---
+
+## 🔵 FASE 15: Animaciones de Transición (Semana 7)
+
+### 15.1 Page Transitions
+- [ ] Fade in/out entre páginas
+- [ ] Slide transitions para móviles
+- [ ] Shared element transitions donde aplique
+
+### 15.2 Component Transitions
+- [ ] Expand/collapse animations
+- [ ] Modal scale + fade
+- [ ] Dropdown animations
+- [ ] Tooltip fade
+
+### 15.3 Micro-interacciones
+- [ ] Toggle switches animados
+- [ ] Checkbox animations
+- [ ] Radio button animations
+- [ ] Progress bar animations
+
+---
+
+## 🔵 FASE 16: Modo Oscuro/Claro (Semana 7-8)
+
+### 16.1 Tema Persistente
+- [ ] Guardar preference en localStorage
+- [ ] Toggle en header/sidebar
+- [ ] Transición suave entre temas
+
+### 16.2 Componentes Theming
+- [ ] Todos los componentes soportan ambos temas
+- [ ] Gráficos adaptan colores
+- [ ] Imágenes con filter en dark mode
+
+### 16.3 Sistema de Colores
+- [ ] CSS variables para temas
+- [ ] Componentes usan variables
+- [ ] No hardcoded colors
+
+---
+
+## 🔵 FASE 17: Mejoras de UX - Chat IA (Semana 8)
+
+### 17.1 Chat Features
+- [ ] Typing indicator (los 3 puntitos)
+- [ ] Auto-scroll al nuevo mensaje
+- [ ] Copy message button
+- [ ] Timestamp en hover
+
+### 17.2 Chat UX
+- [ ] Markdown rendering
+- [ ] Code syntax highlighting
+- [ ] Link previews
+- [ ] Suggested prompts
+
+### 17.3 Chat History
+- [ ] Guardar conversación actual
+- [ ] Cargar conversaciones anteriores
+- [ ] Clear chat option
+- [ ] Export conversation
+
+---
+
+## 🔵 FASE 18: Mejoras de UX - OCR (Semana 8)
+
+### 18.1 Upload Experience
+- [ ] Drag & drop con feedback visual
+- [ ] Preview de imagen antes de procesar
+- [ ] Multiple file upload
+- [ ] Progress bar de procesamiento
+
+### 18.2 Resultados OCR
+- [ ] Editor de resultados editable
+- [ ] Añadir/eliminar items
+- [ ] Recalcular totales automáticamente
+- [ ] Copy to clipboard
+
+### 18.3 Historial
+- [ ] Ver escaneos anteriores
+- [ ] Re-editar escaneos previos
+- [ ] Exportar a PDF/Excel
+
+---
+
+## 🔵 FASE 19: Mejoras de UX - LexNET (Semana 9)
+
+### 19.1 Bandeja de Entrada
+- [ ] Unread count badge
+- [ ] Mark as read on view
+- [ ] Bulk actions
+- [ ] Filter by estado
+
+### 19.2 Reading Experience
+- [ ] Preview de documento adjunto
+- [ ] Download all attachments
+- [ ] Responder desde la vista
+
+### 19.3 Composing
+- [ ] Editor rico para comunicaciones
+- [ ] Adjuntar múltiples archivos
+- [ ] Save as draft
+- [ ] Preview antes de enviar
+
+---
+
+## 🔵 FASE 20: Mejoras de UX - Verificar Documentos (Semana 9)
+
+### 20.1 Cámara
+- [ ] Capture desde webcam
+- [ ] Flash toggle
+- [ ] Auto-capture
+- [ ] Gallery picker
+
+### 20.2 Resultados
+- [ ] Visual highlights de áreas verificadas
+- [ ] Detalle de cada verificación
+- [ ] Export PDF report
+- [ ] Enviar por email
+
+### 20.3 Historial
+- [ ] Timeline de verificaciones
+- [ ] Estadísticas de verificaciones
+- [ ] Exportar logs
+
+---
+
+## 🔵 FASE 21: Notificaciones Toast (Semana 9-10)
+
+### 21.1 Toast Component
+- [ ] Success, error, warning, info variants
+- [ ] Auto-dismiss (configurable)
+- [ ] Manual dismiss button
+- [ ] Stack de toasts
+
+### 21.2 Toast Placements
+- [ ] Top-right default
+- [ ] Mobile: bottom-center
+- [ ] Configurable position
+
+### 21.3 Toast Actions
+- [ ] Action buttons en toast
+- [ ] Undo action
+- [ ] View details link
+
+---
+
+## 🔵 FASE 22: Mejoras de UX - Tiempo/Informes (Semana 10)
+
+### 22.1 Gráficos Interactivos
+- [ ] Tooltips en hover
+- [ ] Click para drill-down
+- [ ] Legend interactiva
+- [ ] Exportar gráfico
+
+### 22.2 Date Range Picker
+- [ ] Presets (última semana, mes, año)
+- [ ] Custom range
+- [ ] Comparación período anterior
+
+### 22.3 Export
+- [ ] Exportar a Excel
+- [ ] Exportar a PDF
+- [ ] Exportar imagen
+
+---
+
+## 🔵 FASE 23: Mejoras de UX - Generador Escritos (Semana 10)
+
+### 23.1 Editor
+- [ ] Rich text editor
+- [ ] Toolbar de formatting
+- [ ] Word count
+- [ ] Auto-save indicator
+
+### 23.2 Templates
+- [ ] Guardar como template
+- [ ] Load from template
+- [ ] Template categories
+
+### 23.3 Preview
+- [ ] Preview en tiempo real
+- [ ] Toggle editor/preview
+- [ ] Print-optimized view
+
+---
+
+## 🔵 FASE 24: Mejoras de UX - Proveedores (Semana 11)
+
+### 24.1 Gestión de Proveedores
+- [ ] CRUD completo (Create, Read, Update, Delete)
+- [ ] Modal de edición inline
+- [ ] Confirm before delete
+- [ ] Undo delete
+
+### 24.2 Contactos
+- [ ] Múltiples contactos por proveedor
+- [ ] Primary contact
+- [ ] Contact history
+
+### 24.3 Evaluación
+- [ ] Rating interactivo (stars)
+- [ ] Añadir comentarios
+- [ ] Historial de evaluaciones
+
+---
+
+## 🔵 FASE 25: Mejoras de UX - Rentabilidad (Semana 11)
+
+### 25.1 Gráficos
+- [ ] Gráfico de barras por abogado
+- [ ] Gráfico de tendencia temporal
+- [ ] Pie chart de distribución
+- [ ] Heatmap de rentabilidad
+
+### 25.2 KPIs
+- [ ] Trend indicators (↑↓)
+- [ ] Comparison vs previous period
+- [ ] Benchmark vs objetivo
+
+### 25.3 Drill-down
+- [ ] Click en abogado → detalle
+- [ ] Click en caso → detalle
+- [ ] Breadcrumb navigation
+
+---
+
+## 🔵 FASE 26: Mejoras de UX - Prescripciones (Semana 11-12)
+
+### 26.1 Timeline View
+- [ ] Vista de línea temporal
+- [ ] Visualización de plazos
+- [ ] Alertas visuales
+
+### 26.2 Calendario View
+- [ ] Vista de calendario mensual
+- [ ] Ver prescripciones por fecha
+- [ ] Crear desde calendario
+
+### 26.3 Recordatorios
+- [ ] Configurar recordatorios
+- [ ] Notificaciones antes de prescripción
+- [ ] Email alerts
+
+---
+
+## 🔵 FASE 27: Mejoras de UX - Búsqueda Semántica (Semana 12)
+
+### 27.1 Resultados
+- [ ] Snippets con highlight
+- [ ] relevance score visual
+- [ ] Filters en sidebar
+- [ ] Sort by relevance/date
+
+### 27.2 Saved Searches
+- [ ] Guardar búsquedas
+- [ ] Ejecutar saved search
+- [ ] Notifications para nuevos resultados
+
+### 27.3 AI Suggestions
+- [ ] Sugerencias de búsqueda
+- [ ] Related searches
+- [ ] Search history
+
+---
+
+## 🔵 FASE 28: Accesibilidad - Screen Readers (Semana 12)
+
+### 28.1 ARIA Labels
+- [ ] Todos los buttons con aria-label
+- [ ] Icon-only buttons
+- [ ] Form inputs con labels
+- [ ] Tables con scope
+
+### 28.2 Live Regions
+- [ ] Notificaciones en vivo
+- [ ] Chat messages
+- [ ] Search results count
+
+### 28.3 Semantic HTML
+- [ ] Use `<main>`, `<nav>`, `<aside>`
+- [ ] Headings hierarchy (h1-h6)
+- [ ] Lists semantics
+
+---
+
+## 🔵 FASE 29: Testing y QA (Semana 12-13)
+
+### 29.1 Testing
+- [ ] Unit tests para componentes
+- [ ] Integration tests para flows
+- [ ] E2E tests críticos
+
+### 29.2 Cross-browser
+- [ ] Chrome, Firefox, Safari, Edge
+- [ ] Mobile browsers
+- [ ] Fix bugs encontrados
+
+### 29.3 Performance Testing
+- [ ] Lighthouse score > 90
+- [ ] First Contentful Paint < 1.5s
+- [ ] Time to Interactive < 3s
+
+---
+
+## 🔵 FASE 30: Documentación y Polish Final (Semana 13)
+
+### 30.1 Documentación
+- [ ] README actualizado
+- [ ] Contributing guide
+- [ ] API documentation
+
+### 30.2 Polish
+- [ ] Animaciones finales
+- [ ] Micro-interacciones
+- [ ] Edge cases
+
+### 30.3 Launch Prep
+- [ ] SEO metadata
+- [ ] Analytics setup
+- [ ] Error tracking (Sentry)
+
+---
+
+## 📊 Resumen de Fases
+
+| Fase | Área | Semanas |
+|------|------|---------|
+| 1 | Skeleton Loaders | 1 |
+| 2 | Estados Vacíos | 1 |
+| 3 | Persistencia | 2 |
+| 4 | Tablas | 2-3 |
+| 5 | Búsqueda/Filtros | 3 |
+| 6 | Estados de Error | 3 |
+| 7 | Formularios Interactivos | 4 |
+| 8 | Optimización Carga | 4 |
+| 9 | Navegación | 5 |
+| 10 | Keyboard Accesibility | 5 |
+| 11 | Responsive | 5-6 |
+| 12 | Rendimiento | 6 |
+| 13 | Button Feedback | 6 |
+| 14 | Form Feedback | 7 |
+| 15 | Animaciones | 7 |
+| 16 | Dark/Light Mode | 7-8 |
+| 17 | Chat IA | 8 |
+| 18 | OCR | 8 |
+| 19 | LexNET | 9 |
+| 20 | Verificar Docs | 9 |
+| 21 | Toast Notifications | 9-10 |
+| 22 | Tiempo/Informes | 10 |
+| 23 | Generador | 10 |
+| 24 | Proveedores | 11 |
+| 25 | Rentabilidad | 11 |
+| 26 | Prescripciones | 11-12 |
+| 27 | Búsqueda Semántica | 12 |
+| 28 | Screen Readers | 12 |
+| 29 | Testing | 12-13 |
+| 30 | Polish/Docs | 13 |
+
+---
+
+## 🎯 Orden de Implementación Sugerido
+
+### Inmediato (Esta semana):
+1. FASE 1 - Skeleton Loaders
+2. FASE 2 - Estados Vacíos
+
+### Esta iteración (2 semanas):
+3. FASE 3 - Persistencia
+4. FASE 4 - Tablas
+5. FASE 5 - Búsqueda
+
+### Este mes:
+6. FASE 6-10
+7. FASE 11-15
+8. FASE 16-20
+
+### Próximo mes:
+9. FASE 21-25
+10. FASE 26-30
+
+---
+
+*Documento específico para las 15 páginas creadas*
+*Mantiene consistencia con sistema de diseño actual*
