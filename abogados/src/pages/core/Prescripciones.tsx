@@ -11,6 +11,9 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDebounce } from '@/hooks/useDebounce';
 import { TableSkeleton, StatsSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { ErrorState } from '@/components/ui/ErrorState';
+import { LoadingOverlay } from '@/components/ui/Loading';
 
 // Datos mock
 const prescripcionesMock = [
@@ -77,6 +80,14 @@ export default function Prescripciones() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Breadcrumbs */}
+      <Breadcrumbs
+        items={[
+          { label: 'Core Legal', path: '/core/expedientes' },
+          { label: 'Prescripciones' }
+        ]}
+      />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
