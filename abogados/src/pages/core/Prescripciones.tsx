@@ -7,6 +7,10 @@ import {
   Clock, AlertTriangle, CheckCircle, XCircle, 
   Calendar, Filter, Search, FolderOpen, ChevronRight
 } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useDebounce } from '@/hooks/useDebounce';
+import { TableSkeleton, StatsSkeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // Datos mock
 const prescripcionesMock = [
@@ -21,12 +25,14 @@ const tiposExpediente = ['todos', 'civil', 'penal', 'laboral', 'familia', 'admin
 
 export default function Prescripciones() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterTipo, setFilterTipo] = useState('todos');
-  const [filterEstado, setFilterEstado] = useState('todos');
+  const [filterTipo, setFilterTipo] = useLocalStorage('prescripciones-tipo', 'todos');
+  const [filterEstado, setFilterEstado] = useLocalStorage('prescripciones-estado', 'todos');
+  const [isLoading, setIsLoading] = useState(false);
+  const debouncedSearch = useDebounce(searchTerm, 300);
 
   const filteredData = prescripcionesMock.filter(item => {
-    const matchesSearch = item.caso.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         item.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = item.caso.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
+                         item.id.toLowerCase().includes(debouncedSearch.toLowerCase());
     const matchesTipo = filterTipo === 'todos' || item.tipo === filterTipo;
     const matchesEstado = filterEstado === 'todos' || item.estado === filterEstado;
     return matchesSearch && matchesTipo && matchesEstado;
@@ -52,6 +58,23 @@ export default function Prescripciones() {
   const prescripcionesPeligro = prescripcionesMock.filter(p => p.estado === 'peligro').length;
   const prescripcionesPrescritas = prescripcionesMock.filter(p => p.estado === 'prescrita').length;
 
+      {/* Empty State */}
+      {!isLoading && filteredData.length === 0 && (
+        <EmptyState
+          icon={Clock}
+          title="No se encontraron prescripciones"
+          description="No hay prescripciones que coincidan con los filtros aplicados"
+          action={{ 
+            label: "Limpiar filtros", 
+            onClick: () => {
+              setSearchTerm('');
+              setFilterTipo('todos');
+              setFilterEstado('todos');
+            }
+          }}
+        />
+      )}
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -61,6 +84,11 @@ export default function Prescripciones() {
           <p className="text-theme-secondary">Control de plazos de prescripción</p>
         </div>
       </div>
+
+      {/* Loading State */}
+      {isLoading ? (
+        <StatsSkeleton />
+      ) : (
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
