@@ -1,13 +1,19 @@
 // M2 - Gestión Documental: OCR
 // Escaneo y reconocimiento óptico de caracteres
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Upload, FileText, Camera, Image, X, Check, 
   AlertCircle, Loader2, Edit2, Trash2, Save
 } from 'lucide-react';
 import { ocrService, type OCRResult } from '@/services/ocrService';
+import { useToast } from '@/components/ui/Toast';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Form';
+import { Card, Badge } from '@/components/ui';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { LoadingOverlay } from '@/components/ui/Loading';
 
 // Datos mock de reconocimientos anteriores
 const historialOCR = [
@@ -24,6 +30,7 @@ export default function DocumentosOCR() {
   const [dragActive, setDragActive] = useState(false);
   const [editedData, setEditedData] = useState<any>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
 
   const handleFile = async (file: File) => {
     if (!file) return;
@@ -31,6 +38,7 @@ export default function DocumentosOCR() {
     setSelectedFile(file);
     setIsProcessing(true);
     setOcrResult(null);
+    showToast('Procesando documento...', 'info');
 
     try {
       const result = await ocrService.processImage(file);

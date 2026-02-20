@@ -1,7 +1,7 @@
 // M1 - Core Legal: Prescripciones
 // Gestión de plazos de prescripción de expedientes
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Clock, AlertTriangle, CheckCircle, XCircle, 
@@ -14,6 +14,10 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { LoadingOverlay } from '@/components/ui/Loading';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Form';
+import { Badge, Card } from '@/components/ui';
+import { useToast } from '@/components/ui/Toast';
 
 // Datos mock
 const prescripcionesMock = [
@@ -31,7 +35,29 @@ export default function Prescripciones() {
   const [filterTipo, setFilterTipo] = useLocalStorage('prescripciones-tipo', 'todos');
   const [filterEstado, setFilterEstado] = useLocalStorage('prescripciones-estado', 'todos');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const debouncedSearch = useDebounce(searchTerm, 300);
+  const { showToast } = useToast();
+
+  // Simulate loading
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => setIsLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleRetry = () => {
+    setIsLoading(true);
+    setError(null);
+    setTimeout(() => setIsLoading(false), 1000);
+  };
+
+  const handleExport = () => {
+    showToast('Exportando prescripciones...', 'info');
+    setTimeout(() => {
+      showToast('Exportación completada', 'success');
+    }, 1500);
+  };
 
   const filteredData = prescripcionesMock.filter(item => {
     const matchesSearch = item.caso.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
@@ -43,10 +69,19 @@ export default function Prescripciones() {
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
-      case 'activa': return 'text-emerald-400 bg-emerald-400/10';
-      case 'peligro': return 'text-amber-400 bg-amber-400/10';
-      case 'prescrita': return 'text-red-400 bg-red-400/10';
-      default: return 'text-gray-400 bg-gray-400/10';
+      case 'activa': return 'success';
+      case 'peligro': return 'warning';
+      case 'prescrita': return 'error';
+      default: return 'default';
+    }
+  };
+
+  const getEstadoLabel = (estado: string) => {
+    switch (estado) {
+      case 'activa': return 'Activa';
+      case 'peligro': return 'En peligro';
+      case 'prescrita': return 'Prescrita';
+      default: return estado;
     }
   };
 
@@ -94,7 +129,29 @@ export default function Prescripciones() {
           <h1 className="text-2xl font-bold text-theme-primary">Prescripciones</h1>
           <p className="text-theme-secondary">Control de plazos de prescripción</p>
         </div>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={handleExport}>
+            Exportar
+          </Button>
+          <Button>
+            Nueva Prescripción
+          </Button>
+        </div>
       </div>
+
+      {/* Error State */}
+      {error && (
+        <ErrorState 
+          title="Error al cargar" 
+          message={error} 
+          onRetry={handleRetry} 
+        />
+      )}
+
+      {/* Loading State */}
+      {isLoading ? (
+        <StatsSkeleton />
+      ) : (
 
       {/* Loading State */}
       {isLoading ? (
@@ -138,25 +195,22 @@ export default function Prescripciones() {
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap gap-4 bg-theme-card border border-theme rounded-xl p-4">
-        <div className="flex-1 min-w-[200px]">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-theme-muted" />
-            <input
-              type="text"
+      {/* Filters */}
+      <Card>
+        <div className="flex flex-wrap gap-4">
+          <div className="flex-1 min-w-[200px]">
+            <Input
               placeholder="Buscar por caso o expediente..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-theme-tertiary border border-theme rounded-xl text-theme-primary placeholder-theme-muted focus:outline-none focus:border-accent"
+              leftIcon={<Search className="w-4 h-4" />}
             />
           </div>
-        </div>
-        <select
-          value={filterTipo}
-          onChange={(e) => setFilterTipo(e.target.value)}
-          className="px-4 py-2 bg-theme-tertiary border border-theme rounded-xl text-theme-primary focus:outline-none focus:border-accent"
-        >
+          <select
+            value={filterTipo}
+            onChange={(e) => setFilterTipo(e.target.value)}
+            className="px-4 py-2 bg-theme-tertiary border border-theme rounded-xl text-theme-primary focus:outline-none focus:border-accent"
+          >
           {tiposExpediente.map(tipo => (
             <option key={tipo} value={tipo}>
               {tipo === 'todos' ? 'Todos los tipos' : tipo.charAt(0).toUpperCase() + tipo.slice(1)}
@@ -218,9 +272,9 @@ export default function Prescripciones() {
                   {item.diasRestantes < 0 ? `Hace ${Math.abs(item.diasRestantes)} días` : `${item.diasRestantes} días`}
                 </td>
                 <td className="p-4 text-center">
-                  <span className={`px-2 py-1 text-xs rounded-full capitalize ${getEstadoColor(item.estado)}`}>
-                    {item.estado}
-                  </span>
+                  <Badge variant={getEstadoColor(item.estado)}>
+                    {getEstadoLabel(item.estado)}
+                  </Badge>
                 </td>
                 <td className="p-4 text-center">
                   <button className="p-2 text-theme-muted hover:text-theme-primary hover:bg-theme-tertiary rounded-lg transition-colors">

@@ -1,12 +1,21 @@
 // M2 - Gestión Documental: Buscar
 // Búsqueda full-text de documentos
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Search, FileText, FolderOpen, Filter, Download, 
   Eye, Clock, User, Tag, X, ChevronRight
 } from 'lucide-react';
+import { useDebounce } from '@/hooks/useDebounce';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { Skeleton } from '@/components/ui/Skeleton';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Form';
+import { Card, Badge } from '@/components/ui';
+import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { useToast } from '@/components/ui/Toast';
 
 // Datos mock
 const documentosMock = [
@@ -24,8 +33,11 @@ export default function DocumentosBuscar() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<typeof documentosMock>([]);
   const [hasSearched, setHasSearched] = useState(false);
-  const [filterTipo, setFilterTipo] = useState('todos');
+  const [isLoading, setIsLoading] = useState(false);
+  const [filterTipo, setFilterTipo] = useLocalStorage('buscar-tipo', 'todos');
   const [selectedDoc, setSelectedDoc] = useState<typeof documentosMock[0] | null>(null);
+  const debouncedSearch = useDebounce(searchTerm, 300);
+  const { showToast } = useToast();
 
   const handleSearch = () => {
     if (!searchTerm.trim()) return;
