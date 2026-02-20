@@ -6,28 +6,23 @@
 
 ## M1 - Core Legal ✅
 
-| Página | Ruta | Roles con Acceso |
-|--------|------|-----------------|
-| Dashboard | `/core/dashboard` | Todos los roles |
-| Expedientes | `/core/expedientes` | super_admin, socio, abogado_senior, abogado_junior, paralegal, secretario |
-| Calendario | `/core/calendario` |Todos los roles excepto cliente |
-| Audiencias | `/core/audiencias` | super_admin, socio, abogado_senior, abogado_junior, paralegal, secretario |
-| Prescripciones | `/core/prescripciones` | super_admin, socio, abogado_senior, abogado_junior |
-
-🆕 **CREAR:** `src/pages/core/Prescripciones.tsx`
+| Página | Ruta | Roles con Acceso | Estado |
+|--------|------|-----------------|--------|
+| Dashboard | `/core/dashboard` | Todos los roles | ✅ Existe |
+| Expedientes | `/core/expedientes` | super_admin, socio, abogado_senior, abogado_junior, paralegal, secretario | ✅ Existe |
+| Calendario | `/core/calendario` |Todos los roles excepto cliente | ✅ Existe |
+| Audiencias | `/core/audiencias` | super_admin, socio, abogado_senior, abogado_junior, paralegal, secretario | ✅ Existe |
+| Prescripciones | `/core/prescripciones` | super_admin, socio, abogado_senior, abogado_junior | ✅ CREADO |
 
 ---
 
 ## M2 - Gestión Documental ✅
 
-| Página | Ruta | Roles con Acceso |
-|--------|------|-----------------|
-| Biblioteca | `/documentos/biblioteca` | super_admin, socio, abogado_senior, abogado_junior, paralegal, secretario, administrador, contador |
-| Buscar (full-text) | `/documentos/buscar` | super_admin, socio, abogado_senior, abogado_junior, paralegal, secretario |
-| OCR | `/documentos/ocr` | super_admin, socio, administrador, contador |
-
-🆕 **CREAR:** `src/pages/documentos/Buscar.tsx`
-🆕 **CREAR:** `src/pages/documentos/OCR.tsx`
+| Página | Ruta | Roles con Acceso | Estado |
+|--------|------|-----------------|--------|
+| Biblioteca | `/documentos/biblioteca` | super_admin, socio, abogado_senior, abogado_junior, paralegal, secretario, administrador, contador | ✅ Existe |
+| Buscar (full-text) | `/documentos/buscar` | super_admin, socio, abogado_senior, abogado_junior, paralegal, secretario | ✅ CREADO |
+| OCR | `/documentos/ocr` | super_admin, socio, administrador, contador | ✅ CREADO
 
 ---
 
@@ -44,29 +39,23 @@
 
 ---
 
-## M4 - Cobranza Pro + Proveedores 🆕
+## M4 - Cobranza Pro + Proveedores ✅
 
-| Página | Ruta | Roles con Acceso |
-|--------|------|-----------------|
-| Dashboard Cobranza | `/cobranza/dashboard` | super_admin, socio, administrador, contador |
-| Proveedores | `/cobranza/proveedores` | super_admin, socio, administrador |
-| Configuración | `/cobranza/config` | super_admin, administrador |
-
-🆕 **CREAR:** `src/pages/cobranza/Dashboard.tsx`
-🆕 **CREAR:** `src/pages/cobranza/Proveedores.tsx`
-🆕 **CREAR:** `src/pages/cobranza/Config.tsx`
+| Página | Ruta | Roles con Acceso | Estado |
+|--------|------|-----------------|--------|
+| Dashboard Cobranza | `/cobranza/dashboard` | super_admin, socio, administrador, contador | ✅ Existe (renombrar) |
+| Proveedores | `/cobranza/proveedores` | super_admin, socio, administrador | ✅ CREADO |
+| Configuración | `/cobranza/config` | super_admin, administrador | 🆕 PENDIENTE
 
 ---
 
 ## M5 - Tiempo & Tareas ✅
 
-| Página | Ruta | Roles con Acceso |
-|--------|------|-----------------|
-| Tareas | `/tiempo/tareas` | super_admin, socio, abogado_senior, abogado_junior, paralegal, secretary |
-| Tracking | `/tiempo/tracking` | super_admin, socio, abogado_senior, abogado_junior, paralegal |
-| Informes Productividad | `/tiempo/informes` | super_admin, socio, administrador |
-
-🆕 **CREAR:** `src/pages/tiempo/Informes.tsx`
+| Página | Ruta | Roles con Acceso | Estado |
+|--------|------|-----------------|--------|
+| Tareas | `/tiempo/tareas` | super_admin, socio, abogado_senior, abogado_junior, paralegal, secretary | ✅ Existe |
+| Tracking | `/tiempo/tracking` | super_admin, socio, abogado_senior, abogado_junior, paralegal | ✅ Existe |
+| Informes Productividad | `/tiempo/informes` | super_admin, socio, administrador | ✅ CREADO
 
 ---
 
@@ -189,7 +178,8 @@
 | Estado | Cantidad |
 |--------|----------|
 | ✅ Existe | 20 páginas |
-| 🆕 Crear | 15 páginas |
+| ✅ Creado | 5 páginas |
+| 🆕 Crear | 10 páginas |
 | **TOTAL** | **35 páginas** |
 
 ---
