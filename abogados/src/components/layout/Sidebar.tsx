@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
 import { 
@@ -6,7 +6,8 @@ import {
   Users, BarChart3, MessageSquare, CreditCard, BookOpen,
   Clock, Shield, Calculator, CheckSquare, UserCircle, Gavel, DollarSign,
   Receipt, FileText, Bell, Activity, Building2, X, FileSignature,
-  Timer, ShieldAlert
+  Timer, ShieldAlert, ChevronDown, ChevronRight, Search, Upload,
+  Briefcase, Sparkles, Bot, Fingerprint, Link, BellRing
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useRole } from '@/hooks/useRole';
@@ -20,330 +21,362 @@ interface SidebarItem {
   badge?: number;
 }
 
-// Definición de items de navegación con permisos por rol
-const sidebarItems: SidebarItem[] = [
-  { 
-    icon: LayoutDashboard, 
-    label: 'Dashboard', 
-    path: '/dashboard', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'contador', 'recepcionista'],
+interface ModuleGroup {
+  id: string;
+  name: string;
+  icon: LucideIcon;
+  color: string;
+  items: SidebarItem[];
+  defaultOpen?: boolean;
+}
+
+// Definición de módulos con sus páginas
+const moduleGroups: ModuleGroup[] = [
+  {
+    id: 'core',
+    name: 'M1 - Core Legal',
+    icon: Scale,
+    color: 'from-blue-500 to-blue-600',
+    defaultOpen: true,
+    items: [
+      { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'contador', 'recepcionista'] },
+      { icon: FolderOpen, label: 'Expedientes', path: '/core/expedientes', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario'], badge: 6 },
+      { icon: Calendar, label: 'Calendario', path: '/core/calendario', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'recepcionista'], badge: 8 },
+      { icon: Gavel, label: 'Audiencias', path: '/core/audiencias', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario'], badge: 4 },
+      { icon: Clock, label: 'Prescripciones', path: '/core/prescripciones', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior'] },
+    ]
   },
-  { 
-    icon: FolderOpen, 
-    label: 'Expedientes', 
-    path: '/expedientes', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario'],
-    badge: 6 
+  {
+    id: 'documentos',
+    name: 'M2 - Gestión Documental',
+    icon: FileText,
+    color: 'from-purple-500 to-purple-600',
+    items: [
+      { icon: BookOpen, label: 'Biblioteca', path: '/documentos/biblioteca', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'contador'] },
+      { icon: Search, label: 'Buscar', path: '/documentos/buscar', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario'] },
+      { icon: Upload, label: 'OCR', path: '/documentos/ocr', roles: ['super_admin', 'socio', 'administrador', 'contador'] },
+    ]
   },
-  { 
-    icon: Calendar, 
-    label: 'Calendario', 
-    path: '/calendario', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'recepcionista'],
-    badge: 8 
+  {
+    id: 'finanzas',
+    name: 'M3 - Finanzas',
+    icon: DollarSign,
+    color: 'from-emerald-500 to-emerald-600',
+    items: [
+      { icon: CreditCard, label: 'Facturación', path: '/finanzas/facturacion', roles: ['super_admin', 'socio', 'administrador', 'contador'] },
+      { icon: Calculator, label: 'Contabilidad', path: '/finanzas/contabilidad', roles: ['super_admin', 'socio', 'administrador', 'contador'] },
+      { icon: Receipt, label: 'Gastos', path: '/finanzas/gastos', roles: ['super_admin', 'socio', 'administrador', 'contador'] },
+      { icon: BarChart3, label: 'Rentabilidad', path: '/finanzas/rentabilidad', roles: ['super_admin', 'socio', 'administrador'] },
+    ]
   },
-  { 
-    icon: Users, 
-    label: 'Clientes', 
-    path: '/clientes', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'recepcionista'],
+  {
+    id: 'cobranza',
+    name: 'M4 - Cobranza',
+    icon: BellRing,
+    color: 'from-amber-500 to-amber-600',
+    items: [
+      { icon: DollarSign, label: 'Cobranza', path: '/cobranza/dashboard', roles: ['super_admin', 'socio', 'administrador', 'contador'] },
+      { icon: Building2, label: 'Proveedores', path: '/cobranza/proveedores', roles: ['super_admin', 'socio', 'administrador'] },
+      { icon: Settings, label: 'Configuración', path: '/cobranza/config', roles: ['super_admin', 'administrador'] },
+    ]
   },
-  { 
-    icon: BarChart3, 
-    label: 'Informes', 
-    path: '/informes', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'administrador', 'contador'],
+  {
+    id: 'tiempo',
+    name: 'M5 - Tiempo & Tareas',
+    icon: Timer,
+    color: 'from-cyan-500 to-cyan-600',
+    items: [
+      { icon: CheckSquare, label: 'Tareas', path: '/tiempo/tareas', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario'], badge: 3 },
+      { icon: Clock, label: 'Tiempo', path: '/tiempo/tracking', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal'] },
+      { icon: Activity, label: 'Informes', path: '/tiempo/informes', roles: ['super_admin', 'socio', 'administrador'] },
+    ]
   },
-  { 
-    icon: MessageSquare, 
-    label: 'Mensajes', 
-    path: '/mensajes', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'contador', 'recepcionista'],
-    badge: 3 
+  {
+    id: 'comunicaciones',
+    name: 'M6 - Comunicaciones',
+    icon: MessageSquare,
+    color: 'from-indigo-500 to-indigo-600',
+    items: [
+      { icon: MessageSquare, label: 'Mensajes', path: '/comunicaciones/mensajes', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'contador', 'recepcionista'], badge: 3 },
+      { icon: Building2, label: 'Juzgados', path: '/comunicaciones/juzgados', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal'] },
+      { icon: Bell, label: 'Notificaciones', path: '/comunicaciones/notificaciones', roles: ['super_admin', 'socio', 'administrador'] },
+    ]
   },
-  { 
-    icon: CreditCard, 
-    label: 'Facturación', 
-    path: '/facturacion', 
-    roles: ['super_admin', 'socio', 'administrador', 'contador'],
+  {
+    id: 'portal',
+    name: 'M7 - Portal Cliente',
+    icon: UserCircle,
+    color: 'from-pink-500 to-pink-600',
+    items: [
+      { icon: UserCircle, label: 'Portal Cliente', path: '/portal', roles: ['super_admin', 'socio', 'administrador'] },
+    ]
   },
-  { 
-    icon: FileSignature, 
-    label: 'Firmas', 
-    path: '/firmas', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'administrador', 'contador'],
-    badge: 2
+  {
+    id: 'firmas',
+    name: 'M8 - Firmas Digitales',
+    icon: FileSignature,
+    color: 'from-teal-500 to-teal-600',
+    items: [
+      { icon: FileSignature, label: 'Firmas', path: '/firmas', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'administrador', 'contador'], badge: 2 },
+    ]
   },
-  { 
-    icon: BookOpen, 
-    label: 'Biblioteca', 
-    path: '/biblioteca', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'contador'],
+  {
+    id: 'informes',
+    name: 'M9 - Informes & BI',
+    icon: BarChart3,
+    color: 'from-orange-500 to-orange-600',
+    items: [
+      { icon: BarChart3, label: 'Informes', path: '/informes', roles: ['super_admin', 'socio', 'administrador', 'contador'] },
+    ]
   },
-  // Módulos específicos por rol
-  { 
-    icon: Calculator, 
-    label: 'Contabilidad', 
-    path: '/contabilidad', 
-    roles: ['super_admin', 'socio', 'administrador', 'contador'],
+  {
+    id: 'biblioteca',
+    name: 'M10 - Biblioteca Legal',
+    icon: BookOpen,
+    color: 'from-rose-500 to-rose-600',
+    items: [
+      { icon: BookOpen, label: 'Legislación', path: '/biblioteca/legislacion', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal'] },
+      { icon: FileText, label: 'Plantillas', path: '/biblioteca/plantillas', roles: ['super_admin', 'socio', 'abogado_senior', 'administrador'] },
+    ]
   },
-  { 
-    icon: Clock, 
-    label: 'Tiempo', 
-    path: '/tiempo', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal'],
+  {
+    id: 'ia',
+    name: 'M11 - IA Legal',
+    icon: Sparkles,
+    color: 'from-violet-500 to-violet-600',
+    items: [
+      { icon: Bot, label: 'Chat IA', path: '/ia/chat', roles: ['super_admin', 'socio', 'abogado_senior'] },
+      { icon: Search, label: 'Búsqueda', path: '/ia/busqueda', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior'] },
+      { icon: FileText, label: 'Generador', path: '/ia/generador', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior'] },
+    ]
   },
-  // Módulo de Conflictos
-  { 
-    icon: ShieldAlert, 
-    label: 'Análisis Validación', 
-    path: '/conflictos/analisis', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal'],
-    badge: 5
+  {
+    id: 'forense',
+    name: 'M12 - Biblioteca Forense',
+    icon: Fingerprint,
+    color: 'from-slate-500 to-slate-600',
+    items: [
+      { icon: Shield, label: 'Verificar ID', path: '/forense/verificar', roles: ['super_admin', 'socio', 'administrador'] },
+      { icon: FileText, label: 'Informes', path: '/forense/informes', roles: ['super_admin', 'socio'] },
+    ]
   },
-  { 
-    icon: ShieldAlert, 
-    label: 'Partes Contrarias', 
-    path: '/conflictos/partes', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario'],
+  {
+    id: 'integraciones',
+    name: 'M13 - Integraciones',
+    icon: Link,
+    color: 'from-zinc-500 to-zinc-600',
+    items: [
+      { icon: Building2, label: 'LexNET', path: '/integraciones/lexnet', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior'] },
+    ]
   },
-  { 
-    icon: Shield, 
-    label: 'Administración', 
-    path: '/admin', 
-    roles: ['super_admin'],
-  },
-  { 
-    icon: CheckSquare, 
-    label: 'Tareas', 
-    path: '/tareas', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario'],
-    badge: 3
-  },
-  { 
-    icon: UserCircle, 
-    label: 'Portal Cliente', 
-    path: '/portal-cliente', 
-    roles: ['super_admin', 'socio', 'administrador'],
-  },
-  { 
-    icon: Gavel, 
-    label: 'Audiencias', 
-    path: '/audiencias', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario'],
-    badge: 4
-  },
-  { 
-    icon: DollarSign, 
-    label: 'Cobranza', 
-    path: '/cobranza', 
-    roles: ['super_admin', 'socio', 'administrador', 'contador'],
-  },
-  { 
-    icon: Receipt, 
-    label: 'Gastos', 
-    path: '/gastos', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'administrador', 'contador'],
-  },
-  { 
-    icon: FileText, 
-    label: 'Plantillas', 
-    path: '/plantillas', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador'],
-  },
-  { 
-    icon: Bell, 
-    label: 'Notificaciones', 
-    path: '/notificaciones', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'contador', 'recepcionista'],
-    badge: 5
-  },
-  { 
-    icon: Activity, 
-    label: 'Bitácora', 
-    path: '/bitacora', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'administrador'],
-  },
-  { 
-    icon: Building2, 
-    label: 'Proveedores', 
-    path: '/proveedores', 
-    roles: ['super_admin', 'socio', 'administrador', 'contador'],
-  },
-  { 
-    icon: Timer, 
-    label: 'Prescripciones', 
-    path: '/prescripciones', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario'],
-    badge: 4
-  },
-  { 
-    icon: ShieldAlert, 
-    label: 'Conflictos', 
-    path: '/conflictos', 
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'administrador'],
-    badge: 3
+  {
+    id: 'admin',
+    name: 'Admin',
+    icon: Shield,
+    color: 'from-red-500 to-red-600',
+    items: [
+      { icon: Settings, label: 'Configuración', path: '/admin/config', roles: ['super_admin'] },
+      { icon: Users, label: 'Usuarios', path: '/admin/usuarios', roles: ['super_admin'] },
+      { icon: UserCircle, label: 'Clientes', path: '/admin/clientes', roles: ['super_admin', 'administrador'] },
+    ]
   },
 ];
 
-interface SidebarProps {
-  isOpen: boolean;
-  isMobile?: boolean;
-  onClose?: () => void;
-}
-
-export function Sidebar({ isOpen, isMobile = false, onClose }: SidebarProps) {
+export default function Sidebar() {
+  const [isOpen, setIsOpen] = useState(true);
+  const [expandedModules, setExpandedModules] = useState<string[]>(['core']);
   const navigate = useNavigate();
   const location = useLocation();
-  const { role, roleConfig } = useRole();
+  const { role } = useRole();
 
-  // Cerrar sidebar al navegar en móvil
-  useEffect(() => {
-    if (isMobile && onClose) {
-      onClose();
-    }
-  }, [location.pathname, isMobile]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('userRoleName');
-    localStorage.removeItem('userEmail');
-    navigate('/login');
+  const toggleModule = (moduleId: string) => {
+    setExpandedModules(prev => 
+      prev.includes(moduleId) 
+        ? prev.filter(id => id !== moduleId)
+        : [...prev, moduleId]
+    );
   };
 
-  // Filtrar items según el rol actual
-  const filteredItems = sidebarItems.filter(item => item.roles.includes(role));
+  const userRole = role as UserRole;
+
+  // Filtrar módulos por rol
+  const visibleModules = moduleGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item => item.roles.includes(userRole))
+  })).filter(group => group.items.length > 0);
 
   return (
-    <>
-      {/* Overlay oscuro para móvil cuando la sidebar está abierta */}
-      <AnimatePresence>
-        {isMobile && isOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
-          />
-        )}
-      </AnimatePresence>
-
-      <motion.aside
-        initial={false}
-        animate={{ 
-          width: isMobile ? (isOpen ? 280 : 0) : (isOpen ? 280 : 80),
-          x: isMobile ? (isOpen ? 0 : -280) : 0
-        }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className={`bg-theme-secondary border-r border-theme flex flex-col flex-shrink-0 z-50 h-screen overflow-y-auto
-          ${isMobile ? 'fixed inset-y-0 left-0' : 'relative'}`}
-      >
-      {/* Logo */}
-      <div className="h-20 flex items-center px-6 border-b border-theme justify-between">
-        <Link to="/" className="flex items-center gap-3 overflow-hidden">
-          <div className="w-10 h-10 bg-gradient-to-br from-accent to-accent rounded-xl flex items-center justify-center flex-shrink-0">
-            <Scale className="w-6 h-6 text-theme-primary" />
-          </div>
-          <AnimatePresence>
-            {isOpen && (
-              <motion.span
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                className="font-bold text-xl text-theme-primary whitespace-nowrap"
-              >
-                DERECHO<span className="text-accent">.ERP</span>
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </Link>
-        
-        {/* Botón cerrar en móvil */}
-        {isMobile && (
-          <button
-            onClick={onClose}
-            className="p-2 text-theme-secondary hover:text-theme-primary hover:bg-theme-hover rounded-lg transition-colors lg:hidden"
-            aria-label="Cerrar menú"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
-      </div>
-
-      {/* Role Indicator */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="px-4 py-3 border-b border-theme"
-          >
-            <div className={`px-3 py-2 rounded-lg ${roleConfig.bgColor} border border-theme`}>
-              <p className="text-xs text-theme-secondary">Accediendo como</p>
-              <p className={`text-sm font-medium ${roleConfig.textColor}`}>{roleConfig.name}</p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Navigation */}
-      <nav className="flex-1 py-6 px-4 space-y-1">
-        {filteredItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <Link
-              key={item.label}
-              to={item.path}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                isActive 
-                  ? 'bg-gradient-to-r from-accent to-accent text-theme-primary font-semibold shadow-lg shadow-accent/20' 
-                  : 'text-theme-secondary hover:bg-theme-hover hover:text-theme-primary'
-              }`}
+    <motion.aside
+      initial={false}
+      animate={{ width: isOpen ? 280 : 80 }}
+      className="fixed left-0 top-0 h-screen bg-theme-card border-r border-theme flex flex-col z-40"
+    >
+      {/* Header */}
+      <div className="p-4 border-b border-theme flex items-center justify-between">
+        <AnimatePresence mode="wait">
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-3"
             >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
-              <AnimatePresence>
-                {isOpen && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex-1 text-left whitespace-nowrap"
-                  >
-                    {item.label}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-              {isOpen && item.badge && (
-                <span className="px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Bottom Actions */}
-      <div className="p-4 border-t border-theme space-y-2">
-        <button className="w-full flex items-center gap-3 px-4 py-3 text-theme-secondary hover:bg-theme-hover hover:text-theme-primary rounded-xl transition-all">
-          <Settings className="w-5 h-5" />
-          <AnimatePresence>
-            {isOpen && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>Configuración</motion.span>}
-          </AnimatePresence>
-        </button>
-        <button 
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+              <div className="w-10 h-10 bg-gradient-to-br from-accent to-purple-500 rounded-xl flex items-center justify-center">
+                <Scale className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="font-bold text-theme-primary">DERECHO</h1>
+                <p className="text-xs text-theme-muted">Legal ERP</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="p-2 text-theme-muted hover:text-theme-primary hover:bg-theme-tertiary rounded-lg transition-colors"
         >
-          <LogOut className="w-5 h-5" />
-          <AnimatePresence>
-            {isOpen && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>Cerrar sesión</motion.span>}
-          </AnimatePresence>
+          {isOpen ? <X className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
         </button>
       </div>
-      </motion.aside>
-    </>
+
+      {/* Módulos */}
+      <div className="flex-1 overflow-y-auto py-4">
+        <AnimatePresence>
+          {isOpen ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-1 px-2"
+            >
+              {visibleModules.map((group) => (
+                <div key={group.id} className="mb-2">
+                  {/* Módulo Header */}
+                  <button
+                    onClick={() => toggleModule(group.id)}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-theme-tertiary transition-colors group"
+                  >
+                    <div className={`w-8 h-8 bg-gradient-to-br ${group.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
+                      <group.icon className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="flex-1 text-left text-sm font-medium text-theme-primary truncate">
+                      {group.name}
+                    </span>
+                    <ChevronDown 
+                      className={`w-4 h-4 text-theme-muted transition-transform ${
+                        expandedModules.includes(group.id) ? '' : '-rotate-90'
+                      }`} 
+                    />
+                  </button>
+
+                  {/* Submenú */}
+                  <AnimatePresence>
+                    {expandedModules.includes(group.id) && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden ml-4 mt-1 space-y-1"
+                      >
+                        {group.items.map((item) => {
+                          const isActive = location.pathname === item.path;
+                          return (
+                            <Link
+                              key={item.path}
+                              to={item.path}
+                              className={`
+                                flex items-center gap-3 px-3 py-2 rounded-lg transition-colors
+                                ${isActive 
+                                  ? 'bg-accent/10 text-accent' 
+                                  : 'text-theme-secondary hover:bg-theme-tertiary hover:text-theme-primary'
+                                }
+                              `}
+                            >
+                              <item.icon className="w-4 h-4 flex-shrink-0" />
+                              <span className="flex-1 text-sm truncate">{item.label}</span>
+                              {item.badge && (
+                                <span className="px-2 py-0.5 text-xs bg-accent text-white rounded-full">
+                                  {item.badge}
+                                </span>
+                              )}
+                            </Link>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </motion.div>
+          ) : (
+            // Modo compacto - solo iconos
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-1 px-2"
+            >
+              {visibleModules.map((group) => (
+                <div key={group.id} className="relative group">
+                  <button
+                    onClick={() => toggleModule(group.id)}
+                    className={`
+                      w-full flex items-center justify-center p-2 rounded-xl 
+                      hover:bg-theme-tertiary transition-colors
+                    `}
+                  >
+                    <div className={`w-8 h-8 bg-gradient-to-br ${group.color} rounded-lg flex items-center justify-center`}>
+                      <group.icon className="w-4 h-4 text-white" />
+                    </div>
+                  </button>
+                  
+                  {/* Tooltip */}
+                  <div className="absolute left-full ml-2 px-2 py-1 bg-theme-primary text-theme-secondary text-sm rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50">
+                    {group.name}
+                  </div>
+
+                  {/* Dropdown en compacto */}
+                  <div className="absolute left-full ml-1 top-0 bg-theme-card border border-theme rounded-xl shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto min-w-[200px] z-50">
+                    {group.items.map((item) => {
+                      const isActive = location.pathname === item.path;
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          className={`
+                            flex items-center gap-3 px-3 py-2 first:rounded-t-xl last:rounded-b-xl transition-colors
+                            ${isActive 
+                              ? 'bg-accent/10 text-accent' 
+                              : 'text-theme-secondary hover:bg-theme-tertiary hover:text-theme-primary'
+                            }
+                          `}
+                        >
+                          <item.icon className="w-4 h-4" />
+                          <span className="flex-1 text-sm">{item.label}</span>
+                          {item.badge && (
+                            <span className="px-2 py-0.5 text-xs bg-accent text-white rounded-full">
+                              {item.badge}
+                            </span>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-theme">
+        <button className="w-full flex items-center gap-3 px-3 py-2 text-theme-muted hover:text-theme-primary hover:bg-theme-tertiary rounded-lg transition-colors">
+          <LogOut className="w-5 h-5" />
+          {isOpen && <span className="text-sm">Cerrar sesión</span>}
+        </button>
+      </div>
+    </motion.aside>
   );
 }
