@@ -21,6 +21,7 @@ import { Input, Select, Textarea } from '@/components/ui/Form';
 import { Card, Badge, Tabs, Progress } from '@/components/ui';
 import { Modal } from '@/components/ui/Modal';
 import { usePagination } from '@/hooks/usePagination';
+import { usePagination } from '@/hooks/usePagination';
 
 // Datos mock mejorados
 const prescripcionesMock = [
@@ -36,6 +37,8 @@ const prescripcionesMock = [
 
 const tiposExpediente = ['todos', 'civil', 'penal', 'laboral', 'familia', 'administrativo'];
 const estados = ['todos', 'activa', 'peligro', 'prescrita'];
+const prioridades = ['todos', 'alta', 'media', 'baja'];
+const abogados = ['todos', 'María González', 'Carlos Ruiz', 'Ana López', 'Javier M.'];
 
 export default function Prescripciones() {
   // Estados
@@ -43,6 +46,8 @@ export default function Prescripciones() {
   const [filterTipo, setFilterTipo] = useLocalStorage('prescripciones-tipo', 'todos');
   const [filterEstado, setFilterEstado] = useLocalStorage('prescripciones-estado', 'todos');
   const [filterPrioridad, setFilterPrioridad] = useLocalStorage('prescripciones-prioridad', 'todos');
+  const [filterAbogado, setFilterAbogado] = useLocalStorage('prescripciones-abogado', 'todos');
+  const [alertasActivas, setAlertasActivas] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -81,7 +86,8 @@ export default function Prescripciones() {
     const matchesTipo = filterTipo === 'todos' || item.tipo === filterTipo;
     const matchesEstado = filterEstado === 'todos' || item.estado === filterEstado;
     const matchesPrioridad = filterPrioridad === 'todos' || item.prioridad === filterPrioridad;
-    return matchesSearch && matchesTipo && matchesEstado && matchesPrioridad;
+    const matchesAbogado = filterAbogado === 'todos' || item.abogado === filterAbogado;
+    return matchesSearch && matchesTipo && matchesEstado && matchesPrioridad && matchesAbogado;
   });
 
   // Obtener datos según tab
@@ -126,12 +132,37 @@ export default function Prescripciones() {
     showToast('Prescripción eliminada', 'success');
   };
 
-  const handleExport = () => {
-    showToast('Exportando...', 'info');
+  const handleExportPDF = () => {
+    showToast('Generando PDF...', 'info');
+    // Simular generación PDF
     setTimeout(() => {
-      showToast('Exportación completada', 'success');
+      showToast('PDF descargado correctamente', 'success');
     }, 1500);
   };
+
+  const handleExportExcel = () => {
+    showToast('Generando Excel...', 'info');
+    // Simular generación Excel
+    setTimeout(() => {
+      showToast('Excel descargado correctamente', 'success');
+    }, 1500);
+  };
+
+  const handleToggleAlertas = () => {
+    setAlertasActivas(!alertasActivas);
+    showToast(alertasActivas ? 'Alertas desactivadas' : 'Alertas activadas', 'info');
+  };
+
+  // Verificar alertas automáticas
+  useEffect(() => {
+    if (!alertasActivas) return;
+    
+    const prescripcionesPeligro = filteredData.filter(p => p.diasRestantes > 0 && p.diasRestantes <= 30);
+    
+    if (prescripcionesPeligro.length > 0) {
+      showToast(`⚠️ Tienes ${prescripcionesPeligro.length} prescripciones en peligro`, 'warning');
+    }
+  }, [filteredData, alertasActivas]);
 
   const handleToggleRecordatorio = (id: string) => {
     showToast('Recordatorio actualizado', 'success');
