@@ -2,7 +2,7 @@
 // Reusable empty states for all pages
 
 import { motion } from 'framer-motion';
-import { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface EmptyStateProps {
   icon: LucideIcon;

@@ -11,10 +11,12 @@ import {
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/components/ui/Toast';
-import { Button, Input, Select } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { Input, Select } from '@/components/ui/Form';
 import { Card, Badge } from '@/components/ui';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { StatsSkeleton, TableSkeleton } from '@/components/ui/Skeleton';
+import { AppLayout } from '@/components/layout/AppLayout';
 
 // Datos mock
 const rentabilidadPorCasoMock = [
@@ -61,6 +63,7 @@ export default function FinanzasRentabilidad() {
   };
 
   return (
+    <AppLayout title="Rentabilidad" subtitle="Análisis de rentabilidad por caso y abogado">
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -256,5 +259,6 @@ export default function FinanzasRentabilidad() {
         </div>
       )}
     </div>
+    </AppLayout>
   );
 }

@@ -45,7 +45,7 @@ export function LoadingOverlay({
 }
 
 // Loading Button Component
-import { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface LoadingButtonProps {
   isLoading: boolean;

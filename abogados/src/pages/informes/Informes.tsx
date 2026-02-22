@@ -8,6 +8,7 @@ import {
   Calendar, User, Clock, CheckCircle, AlertCircle,
   FileSignature, Printer, Share2
 } from 'lucide-react';
+import { AppLayout } from '@/components/layout/AppLayout';
 
 // Datos mock
 const informesMock = [
@@ -93,6 +94,7 @@ export default function ForenseInformes() {
   };
 
   return (
+    <AppLayout title="Informes Periciales" subtitle="Generación de informes">
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -327,5 +329,6 @@ export default function ForenseInformes() {
         </motion.div>
       )}
     </div>
+    </AppLayout>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
 import { 
@@ -7,7 +7,8 @@ import {
   Clock, Shield, Calculator, CheckSquare, UserCircle, Gavel, DollarSign,
   Receipt, FileText, Bell, Activity, Building2, X, FileSignature,
   Timer, ShieldAlert, ChevronDown, ChevronRight, Search, Upload,
-  Briefcase, Sparkles, Bot, Fingerprint, Link, BellRing
+  Briefcase, Sparkles, Bot, Fingerprint, Link as LinkIcon, BellRing,
+  Target, AlertTriangle
 } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useRole } from '@/hooks/useRole';
@@ -75,7 +76,7 @@ const moduleGroups: ModuleGroup[] = [
     icon: BellRing,
     color: 'from-amber-500 to-amber-600',
     items: [
-      { icon: DollarSign, label: 'Cobranza', path: '/cobranza/dashboard', roles: ['super_admin', 'socio', 'administrador', 'contador'] },
+      { icon: DollarSign, label: 'Cobranza', path: '/cobranza', roles: ['super_admin', 'socio', 'administrador', 'contador'] },
       { icon: Building2, label: 'Proveedores', path: '/cobranza/proveedores', roles: ['super_admin', 'socio', 'administrador'] },
       { icon: Settings, label: 'Configuración', path: '/cobranza/config', roles: ['super_admin', 'administrador'] },
     ]
@@ -87,7 +88,7 @@ const moduleGroups: ModuleGroup[] = [
     color: 'from-cyan-500 to-cyan-600',
     items: [
       { icon: CheckSquare, label: 'Tareas', path: '/tiempo/tareas', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario'], badge: 3 },
-      { icon: Clock, label: 'Tiempo', path: '/tiempo/tracking', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal'] },
+      { icon: Clock, label: 'Tiempo', path: '/tiempo', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal'] },
       { icon: Activity, label: 'Informes', path: '/tiempo/informes', roles: ['super_admin', 'socio', 'administrador'] },
     ]
   },
@@ -157,16 +158,40 @@ const moduleGroups: ModuleGroup[] = [
     color: 'from-slate-500 to-slate-600',
     items: [
       { icon: Shield, label: 'Verificar ID', path: '/forense/verificar', roles: ['super_admin', 'socio', 'administrador'] },
-      { icon: FileText, label: 'Informes', path: '/forense/informes', roles: ['super_admin', 'socio'] },
     ]
   },
   {
     id: 'integraciones',
     name: 'M13 - Integraciones',
-    icon: Link,
+    icon: LinkIcon,
     color: 'from-zinc-500 to-zinc-600',
     items: [
       { icon: Building2, label: 'LexNET', path: '/integraciones/lexnet', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior'] },
+    ]
+  },
+  {
+    id: 'crm',
+    name: 'F4 - CRM',
+    icon: Target,
+    color: 'from-lime-500 to-lime-600',
+    items: [
+      { icon: BarChart3, label: 'Dashboard', path: '/crm/dashboard', roles: ['super_admin', 'socio', 'administrador'] },
+      { icon: Target, label: 'Pipeline', path: '/crm/pipeline', roles: ['super_admin', 'socio', 'administrador'] },
+      { icon: Users, label: 'Leads', path: '/crm/leads', roles: ['super_admin', 'socio', 'administrador'] },
+    ]
+  },
+  {
+    id: 'oficio',
+    name: 'N7 - Turnos de Oficio',
+    icon: ShieldAlert,
+    color: 'from-orange-500 to-orange-600',
+    defaultOpen: true,
+    items: [
+      { icon: LayoutDashboard, label: 'Dashboard', path: '/oficio/dashboard', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior'] },
+      { icon: Calendar, label: 'Turnos', path: '/oficio/turnos', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior'], badge: 5 },
+      { icon: Clock, label: 'Guardias', path: '/oficio/guardias', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior'] },
+      { icon: FileText, label: 'Actuaciones', path: '/oficio/actuaciones', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior'] },
+      { icon: Receipt, label: 'Liquidación', path: '/oficio/liquidacion', roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior'] },
     ]
   },
   {
@@ -175,19 +200,26 @@ const moduleGroups: ModuleGroup[] = [
     icon: Shield,
     color: 'from-red-500 to-red-600',
     items: [
-      { icon: Settings, label: 'Configuración', path: '/admin/config', roles: ['super_admin'] },
-      { icon: Users, label: 'Usuarios', path: '/admin/usuarios', roles: ['super_admin'] },
-      { icon: UserCircle, label: 'Clientes', path: '/admin/clientes', roles: ['super_admin', 'administrador'] },
+      { icon: Settings, label: 'Admin', path: '/admin', roles: ['super_admin'] },
     ]
   },
 ];
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
-  const [expandedModules, setExpandedModules] = useState<string[]>(['core']);
+  const [expandedModules, setExpandedModules] = useState<string[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
   const { role } = useRole();
+
+  useEffect(() => {
+    const currentModule = moduleGroups.find(group => 
+      group.items.some(item => item.path === location.pathname || location.pathname.startsWith(item.path + '/'))
+    );
+    if (currentModule && !expandedModules.includes(currentModule.id)) {
+      setExpandedModules(prev => [...prev, currentModule.id]);
+    }
+  }, [location.pathname]);
 
   const toggleModule = (moduleId: string) => {
     setExpandedModules(prev => 

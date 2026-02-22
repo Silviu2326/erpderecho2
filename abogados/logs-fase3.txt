@@ -1,0 +1,39 @@
+# LOG: Ejecución prompts N7 Fase 3
+# Fecha: 2026-02-22
+
+## Prompt 5: baremos.ts
+- Estado: CREADO
+- Archivo: src/data/baremos.ts
+- Contenido: Tarifas oficiales de Turno de Oficio por CCAA
+
+## Prompt 6: BaremoTable.tsx
+- Estado: CREADO
+- Archivo: src/components/oficio/BaremoTable.tsx
+- Contenido: Tabla de tarifas con filtros y cálculo automático
+- ESLint: Corregido (variables no usadas)
+
+## Prompt 7: Liquidacion.tsx
+- Estado: CREADO
+- Archivo: src/pages/oficio/Liquidacion.tsx
+- Rutas: Agregada /oficio/liquidacion en App.tsx
+- Sidebar: Agregado enlace a Liquidación
+
+## Prompt 8: DashboardOficio extendido
+- Estado: COMPLETADO
+- Cambios:
+  1. Extended EstadisticasOficio interface con nuevas estadísticas
+  2. Actualizado oficioService con datos de estadísticas
+  3. Agregados gráficos al Dashboard:
+     - Actuaciones por mes (bar chart)
+     - Comparación ingresos oficio vs privado
+     - Delitos más frecuentes
+     - Juzgados más activos
+     - Horas dedicadas por mes
+  4. Ruta /oficio/liquidacion agregada (ya estaba de prompt 7)
+- Pendiente: Actualizar DISENO_PENDIENTES.md
+
+## Resumen
+-baremos.ts: ✅
+- BaremoTable.tsx: ✅
+- Liquidacion.tsx: ✅
+- DashboardOficio stats: ✅

@@ -123,7 +123,7 @@ Gracias por su visita`,
     const warnings: string[] = [];
 
     if (!data.vendor) errors.push('No el proveedor');
-    se ha detectado if (!data.date) errors.push('No se ha detectado la fecha');
+    if (!data.date) errors.push('No se ha detectado la fecha');
     if (!data.total) errors.push('No se ha detectado el total');
 
     if (data.total && data.total > 10000) {

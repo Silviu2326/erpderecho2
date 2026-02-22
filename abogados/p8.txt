@@ -1,0 +1,5 @@
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N7 - Fase 3 (tarea 3.3), extiende el DashboardOficio.tsx existente en src/pages/oficio/ con estadísticas adicionales: gráfico de actuaciones por mes (puedes usar recharts o un simple chart CSS), comparación ingresos turno de oficio vs cliente privado, tipos de delito más frecuentes, juzgados más activos, y horas dedicadas a turno de oficio. Usa los datos existentes del servicio.
+
+Agrega la ruta /oficio/actuaciones y /oficio/liquidacion en App.tsx y añade los enlaces correspondientes en el Sidebar. Verifica que todo compile correctamente.
+
+Actualiza @abogados\DISENO_PENDIENTES.md marcando la Fase 2 y Fase 3 de N7 como completadas.

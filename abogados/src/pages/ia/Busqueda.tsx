@@ -8,6 +8,7 @@ import {
   Filter, Download, ExternalLink, Star, ChevronDown,
   Brain, Target, Lightbulb
 } from 'lucide-react';
+import { AppLayout } from '@/components/layout/AppLayout';
 
 // Datos mock de resultados
 const resultadosMock = [
@@ -96,6 +97,7 @@ export default function IABusqueda() {
   };
 
   return (
+    <AppLayout title="Búsqueda Semántica" subtitle="Búsqueda inteligente con IA">
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -279,5 +281,6 @@ export default function IABusqueda() {
         </div>
       )}
     </div>
+    </AppLayout>
   );
 }

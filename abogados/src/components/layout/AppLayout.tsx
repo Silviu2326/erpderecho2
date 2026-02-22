@@ -1,17 +1,11 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import type { LucideIcon } from 'lucide-react';
-import {
-  Scale, LayoutDashboard, FolderOpen, Calendar, Users,
-  BarChart3, MessageSquare, Settings, Bell,
-  LogOut, ChevronDown, CreditCard, BookOpen, CheckSquare, UserCircle,
-  Gavel, DollarSign, Receipt, FileText, Activity, Building2,
-  Menu, X
-} from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Bell, ChevronDown, Users, Settings, LogOut } from 'lucide-react';
 import { useRole } from '@/hooks/useRole';
 import type { UserRole } from '@/types/roles';
 import { ThemeToggleSimple } from '@/components/ThemeToggle';
+import Sidebar from './Sidebar';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -20,126 +14,6 @@ interface AppLayoutProps {
   headerActions?: React.ReactNode;
 }
 
-interface SidebarItem {
-  icon: LucideIcon;
-  label: string;
-  path: string;
-  roles: UserRole[];
-  badge?: number;
-}
-
-// Definición de items de navegación con permisos por rol
-const sidebarItems: SidebarItem[] = [
-  {
-    icon: LayoutDashboard,
-    label: 'Dashboard',
-    path: '/dashboard',
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'contador', 'recepcionista'],
-  },
-  {
-    icon: FolderOpen,
-    label: 'Expedientes',
-    path: '/expedientes',
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario'],
-    badge: 6
-  },
-  {
-    icon: Calendar,
-    label: 'Calendario',
-    path: '/calendario',
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'recepcionista'],
-    badge: 8
-  },
-  {
-    icon: Users,
-    label: 'Clientes',
-    path: '/clientes',
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'recepcionista'],
-  },
-  {
-    icon: BarChart3,
-    label: 'Informes',
-    path: '/informes',
-    roles: ['super_admin', 'socio', 'abogado_senior', 'administrador', 'contador'],
-  },
-  {
-    icon: MessageSquare,
-    label: 'Mensajes',
-    path: '/mensajes',
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'contador', 'recepcionista'],
-    badge: 3
-  },
-  {
-    icon: CreditCard,
-    label: 'Facturación',
-    path: '/facturacion',
-    roles: ['super_admin', 'socio', 'administrador', 'contador'],
-  },
-  {
-    icon: BookOpen,
-    label: 'Biblioteca',
-    path: '/biblioteca',
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'contador'],
-  },
-  {
-    icon: CheckSquare,
-    label: 'Tareas',
-    path: '/tareas',
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario'],
-    badge: 3
-  },
-  {
-    icon: UserCircle,
-    label: 'Portal Cliente',
-    path: '/portal-cliente',
-    roles: ['super_admin', 'socio', 'administrador'],
-  },
-  {
-    icon: Gavel,
-    label: 'Audiencias',
-    path: '/audiencias',
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario'],
-    badge: 4
-  },
-  {
-    icon: DollarSign,
-    label: 'Cobranza',
-    path: '/cobranza',
-    roles: ['super_admin', 'socio', 'administrador', 'contador'],
-  },
-  {
-    icon: Receipt,
-    label: 'Gastos',
-    path: '/gastos',
-    roles: ['super_admin', 'socio', 'abogado_senior', 'administrador', 'contador'],
-  },
-  {
-    icon: FileText,
-    label: 'Plantillas',
-    path: '/plantillas',
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador'],
-  },
-  {
-    icon: Bell,
-    label: 'Notificaciones',
-    path: '/notificaciones',
-    roles: ['super_admin', 'socio', 'abogado_senior', 'abogado_junior', 'paralegal', 'secretario', 'administrador', 'contador', 'recepcionista'],
-    badge: 5
-  },
-  {
-    icon: Activity,
-    label: 'Bitácora',
-    path: '/bitacora',
-    roles: ['super_admin', 'socio', 'abogado_senior', 'administrador'],
-  },
-  {
-    icon: Building2,
-    label: 'Proveedores',
-    path: '/proveedores',
-    roles: ['super_admin', 'socio', 'administrador', 'contador'],
-  },
-];
-
 const notifications = [
   { id: 1, title: 'Nuevo expediente asignado', message: 'Se te ha asignado el caso EXP-2024-006 - Delito fiscal', time: '5 min', read: false, type: 'case' },
   { id: 2, title: 'Plazo próximo crítico', message: 'Vence plazo en EXP-2024-001 en 2 horas', time: '1 h', read: false, type: 'urgent' },
@@ -147,38 +21,11 @@ const notifications = [
 ];
 
 export function AppLayout({ children, title, subtitle, headerActions }: AppLayoutProps) {
-  // En móvil, la sidebar empieza cerrada; en desktop, abierta
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { role, roleConfig, roleName, isLoading } = useRole();
-
-  // Detectar tamaño de pantalla
-  useEffect(() => {
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 1024;
-      setIsMobile(mobile);
-      // En desktop (no móvil), sidebar abierta por defecto
-      // En móvil, sidebar cerrada por defecto
-      if (!mobile) {
-        setSidebarOpen(true);
-      }
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  // Cerrar sidebar al navegar en móvil
-  useEffect(() => {
-    if (isMobile) {
-      setSidebarOpen(false);
-    }
-  }, [location.pathname, isMobile]);
 
   // Obtener datos del usuario desde localStorage
   const userEmail = localStorage.getItem('userEmail') || 'usuario@derecho.erp';
@@ -201,9 +48,6 @@ export function AppLayout({ children, title, subtitle, headerActions }: AppLayou
 
   const isActive = (path: string) => location.pathname === path;
 
-  // Filtrar items según el rol actual
-  const filteredItems = sidebarItems.filter(item => item.roles.includes(role));
-
   // Mostrar loading mientras se carga el rol
   if (isLoading) {
     return (
@@ -215,141 +59,14 @@ export function AppLayout({ children, title, subtitle, headerActions }: AppLayou
 
   return (
     <div className="min-h-screen bg-theme-primary flex overflow-hidden">
-      {/* Overlay oscuro para móvil cuando la sidebar está abierta */}
-      <AnimatePresence>
-        {isMobile && sidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
-          />
-        )}
-      </AnimatePresence>
-
       {/* Sidebar */}
-      <motion.aside
-        initial={false}
-        animate={{
-          width: sidebarOpen ? 280 : 0,
-          x: sidebarOpen ? 0 : -280
-        }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        className={`bg-theme-secondary border-r border-theme flex flex-col flex-shrink-0 z-50 
-          ${isMobile ? 'fixed inset-y-0 left-0' : 'fixed inset-y-0 left-0'}`}
-      >
-        {/* Logo */}
-        <div className="h-20 flex items-center px-6 border-b border-theme justify-between">
-          <Link to="/" className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 bg-gradient-to-br from-accent to-amber-600 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Scale className="w-6 h-6 text-theme-primary" />
-            </div>
-            <AnimatePresence>
-              {sidebarOpen && (
-                <motion.span
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  className="font-bold text-xl text-theme-primary whitespace-nowrap"
-                >
-                  DERECHO<span className="text-accent">.ERP</span>
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </Link>
-
-          {/* Botón cerrar en móvil */}
-          {isMobile && (
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="p-2 text-theme-secondary hover:text-theme-primary hover:bg-theme-tertiary rounded-lg transition-colors lg:hidden"
-              aria-label="Cerrar menú"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto">
-          {filteredItems.map((item) => (
-            <Link
-              key={item.label}
-              to={item.path}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${isActive(item.path)
-                  ? 'bg-gradient-to-r from-accent to-amber-600 text-theme-primary font-semibold shadow-lg shadow-accent/20'
-                  : 'text-theme-secondary hover:bg-theme-tertiary hover:text-theme-primary'
-                }`}
-            >
-              <item.icon className="w-5 h-5 flex-shrink-0" />
-              <AnimatePresence>
-                {sidebarOpen && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="flex-1 text-left whitespace-nowrap"
-                  >
-                    {item.label}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-              {sidebarOpen && item.badge && (
-                <span className="px-2 py-0.5 bg-red-500 text-theme-primary text-xs font-bold rounded-full">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Bottom Actions */}
-        <div className="p-4 border-t border-theme space-y-2">
-          <button className="w-full flex items-center gap-3 px-4 py-3 text-theme-secondary hover:bg-theme-tertiary hover:text-theme-primary rounded-xl transition-all">
-            <Settings className="w-5 h-5" />
-            <AnimatePresence>
-              {sidebarOpen && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>Configuración</motion.span>}
-            </AnimatePresence>
-          </button>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
-          >
-            <LogOut className="w-5 h-5" />
-            <AnimatePresence>
-              {sidebarOpen && <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>Cerrar sesión</motion.span>}
-            </AnimatePresence>
-          </button>
-        </div>
-      </motion.aside>
+      <Sidebar />
 
       {/* Main Content */}
-      <motion.div 
-        className="flex-1 flex flex-col min-w-0"
-        animate={{
-          marginLeft: sidebarOpen ? 280 : 0
-        }}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      >
+      <div className="flex-1 flex flex-col min-w-0 ml-[280px]">
         {/* Header */}
         <header className="h-20 bg-theme-secondary/80 backdrop-blur-xl border-b border-theme flex items-center justify-between px-4 lg:px-8">
           <div className="flex items-center gap-3 lg:gap-4">
-            {/* Botón de menú hamburguesa para móvil */}
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 text-theme-secondary hover:text-theme-primary hover:bg-theme-tertiary rounded-lg transition-colors"
-              aria-label="Toggle sidebar"
-            >
-              {isMobile ? (
-                <Menu className="w-5 h-5" />
-              ) : (
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              )}
-            </button>
-
             <div>
               <h1 className="text-xl font-bold text-theme-primary">{title}</h1>
               {subtitle && <p className="text-sm text-theme-secondary">{subtitle}</p>}
@@ -470,7 +187,7 @@ export function AppLayout({ children, title, subtitle, headerActions }: AppLayou
 
         {/* Page Content */}
         {children}
-      </motion.div>
+      </div>
     </div>
   );
 }

@@ -21,7 +21,7 @@ import { Input, Select, Textarea } from '@/components/ui/Form';
 import { Card, Badge, Tabs, Progress } from '@/components/ui';
 import { Modal } from '@/components/ui/Modal';
 import { usePagination } from '@/hooks/usePagination';
-import { usePagination } from '@/hooks/usePagination';
+import { AppLayout } from '@/components/layout/AppLayout';
 
 // Datos mock mejorados
 const prescripcionesMock = [
@@ -188,6 +188,7 @@ export default function Prescripciones() {
   };
 
   return (
+    <AppLayout title="Prescripciones" subtitle="Gestión de plazos de prescripción">
     <div className="p-6 space-y-6">
       {/* Breadcrumbs */}
       <Breadcrumbs
@@ -204,7 +205,7 @@ export default function Prescripciones() {
           <p className="text-theme-secondary">Control de plazos de prescripción</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={handleExport}>
+          <Button variant="secondary" onClick={handleExportPDF}>
             <Download className="w-4 h-4 mr-2" />
             Exportar
           </Button>
@@ -507,5 +508,6 @@ export default function Prescripciones() {
         </div>
       </Modal>
     </div>
+    </AppLayout>
   );
 }

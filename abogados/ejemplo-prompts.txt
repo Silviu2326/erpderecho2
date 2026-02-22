@@ -1,0 +1,6 @@
+# Ejemplo de archivo de prompts para opencode-runner
+# Formato: Separar cada prompt con una línea vacía
+
+revisa el @abogados\DISENO_PENDIENTES.md quiero que implementes la fase 1 del N7 Turnos de oficio
+
+dime que tareas faltan en la fase 2 del N7

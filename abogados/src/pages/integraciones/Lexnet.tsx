@@ -8,6 +8,7 @@ import {
   Send, Download, Upload, RefreshCw, Settings, Clock,
   FileText, User, Eye, Search, Filter
 } from 'lucide-react';
+import { AppLayout } from '@/components/layout/AppLayout';
 
 // Datos mock
 const comunicacionesLexnetMock = [
@@ -53,6 +54,7 @@ export default function IntegracionesLexnet() {
   });
 
   return (
+    <AppLayout title="LexNET" subtitle="Comunicaciones judiciales">
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -289,5 +291,6 @@ export default function IntegracionesLexnet() {
         </div>
       )}
     </div>
+    </AppLayout>
   );
 }

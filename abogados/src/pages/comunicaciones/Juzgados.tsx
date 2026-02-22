@@ -8,6 +8,7 @@ import {
   XCircle, AlertCircle, Plus, Filter, User, Calendar,
   MessageSquare, Paperclip, Eye, Download, ChevronRight
 } from 'lucide-react';
+import { AppLayout } from '@/components/layout/AppLayout';
 
 // Datos mock
 const juzgadosMock = [
@@ -20,7 +21,7 @@ const juzgadosMock = [
 const comunicacionesMock = [
   { id: 'COM-001', expediente: 'EXP-2024-001', juzgado: 'Juzgado de Primera Instancia nº 1', asunto: 'Demanda laboral', tipo: 'enviado', fecha: '2024-05-15', estado: 'entregado' },
   { id: 'COM-002', expediente: 'EXP-2024-002', juzgado: 'Juzgado de lo Social nº 5', asunto: 'Recurso', tipo: 'recibido', fecha: '2024-05-14', estado: 'leido' },
-  { id: 'COM-003', expediente: 'EXP-2024-003', Audiencia Provincial de Madrid', asunto: 'Sentencia', tipo: 'recibido', fecha: '2024-05-12', estado: 'pendiente' },
+  { id: 'COM-003', expediente: 'EXP-2024-003', juzgado: 'Audiencia Provincial de Madrid', asunto: 'Sentencia', tipo: 'recibido', fecha: '2024-05-12', estado: 'pendiente' },
   { id: 'COM-004', expediente: 'EXP-2024-001', juzgado: 'Juzgado de Primera Instancia nº 1', asunto: 'Acumulación', tipo: 'enviado', fecha: '2024-05-10', estado: 'entregado' },
 ];
 
@@ -44,6 +45,7 @@ const BandejaEntrada = () => {
   };
 
   return (
+    <AppLayout title="Juzgados" subtitle="Comunicación con juzgados y tribunales">
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -271,6 +273,7 @@ const BandejaEntrada = () => {
         </motion.div>
       )}
     </div>
+    </AppLayout>
   );
 };
 

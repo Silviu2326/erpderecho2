@@ -1,0 +1,1 @@
+Verifica que los archivos creados compilen correctamente con npx tsc --noEmit y no tengan errores de ESLint. Asegúrate de que las rutas estén configuradas en App.tsx.

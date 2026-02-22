@@ -23,7 +23,7 @@ interface UsePaginationReturn<T> {
   goToPage: (page: number) => void;
   nextPage: () => void;
   prevPage: () => void;
-  setPageSize: (size: number) => void;
+  updatePageSize: (size: number) => void;
   
   // Info
   startIndex: number;
@@ -68,7 +68,7 @@ export function usePagination<T>({
     goToPage(currentPage - 1);
   }, [currentPage, goToPage]);
 
-  const setPageSize = useCallback((size: number) => {
+  const updatePageSize = useCallback((size: number) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page
   }, []);
@@ -109,7 +109,7 @@ export function usePagination<T>({
     goToPage,
     nextPage,
     prevPage,
-    setPageSize,
+    updatePageSize,
     startIndex: totalItems > 0 ? startIndex + 1 : 0,
     endIndex,
     hasNextPage: currentPage < totalPages,

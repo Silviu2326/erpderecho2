@@ -1,0 +1,224 @@
+﻿==========================================
+OpenCode Prompt Runner - 02/22/2026 11:50:53
+==========================================
+Total prompts detected: 112
+
+----------------------------------------
+PROMPT 1/4
+----------------------------------------
+# Prompts para implementar las funcionalidades pendientes (Frontend Only)
+# Basado en DISENO_PENDIENTES.md
+# Stack: React 19 + Vite 7 + TypeScript 5.9 + Tailwind 4 + Framer Motion
+# Cada prompt está separado por una línea vacía
+
+OUTPUT:
+node.exe : [0m
+En C:\Users\usuario\AppData\Roaming\npm\npx.ps1: 24 Carácter: 5
++     & "node$exe"  "$basedir/node_modules/npm/bin/npx-cli.js" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([0m:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+> build · MiniMax-M2.5
+[0m
+[0m→ [0mRead C:\Users\usuario\AppData\Local\Temp\tmp86FB.tmp.txt
+This file appears to be a template for prompts about implementing pending frontend features. It currently only contains metadata headers with no actual prompts.
+
+What would you like me to do with it? For example:
+- Add prompts based on a `DISENO_PENDIENTES.md` file
+- Help you fill in specific functionality prompts
+- Something else
+
+
+=== PROMPT 1 COMPLETADO ===
+
+----------------------------------------
+PROMPT 2/4
+----------------------------------------
+################################################################################
+# N7 - Turnos de Oficio - Fase 2 (Registro de actuaciones)
+################################################################################
+
+OUTPUT:
+node.exe : [0m
+En C:\Users\usuario\AppData\Roaming\npm\npx.ps1: 24 Carácter: 5
++     & "node$exe"  "$basedir/node_modules/npm/bin/npx-cli.js" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([0m:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+[0m
+> build · MiniMax-M2.5[0m→ [0mRead C:\Users\usuario\AppData\Local\Temp\tmpB502.tmp.txt
+This appears to be a temp file referencing "N7 - Turnos de Oficio - Fase 2" (Phase 2 of a legal duty roster system). What would you like me to do with this?
+
+
+=== PROMPT 2 COMPLETADO ===
+
+----------------------------------------
+PROMPT 3/4
+----------------------------------------
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N7 - Turnos de Oficio - Fase 2 (tarea 2.1), implementa el componente src/components/oficio/RegistroActuacion.tsx. Este formulario móvil-first debe permitir registrar actuaciones de oficio con: tipo de actuación (Usa TipoActuacion de src/t...
+
+OUTPUT:
+node.exe : [0m
+En C:\Users\usuario\AppData\Roaming\npm\npx.ps1: 24 Carácter: 5
++     & "node$exe"  "$basedir/node_modules/npm/bin/npx-cli.js" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([0m:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+> build · MiniMax-M2.5
+[0m
+[0m→ [0mRead C:\Users\usuario\AppData\Local\Temp\tmpDC03.tmp.txt
+[0m→ [0mRead abogados\DISENO_PENDIENTES.md
+[0m✗ [0mread failed
+[91m[1mError: [0mFile not found: E:\derecho\src\types\oficio.ts
+[0m✗ [0mread failed[91m[1mError: [0mFile not found: E:\derecho\src\services\oficioService.ts
+
+[0m✱ [0mGlob "**/oficio*.ts"[90m 2 matches[0m
+[0m→ [0mRead abogados\src\types\oficio.ts
+[0m→ [0mRead abogados\src\services\oficioService.ts
+[0m✱ [0mGlob "**/oficio/*.tsx"[90m 4 matches[0m
+[0m✱ [0mGlob "**/useTurnos*.ts"[90m 1 match[0m
+[0m→ [0mRead abogados\src\hooks\useTurnos.ts
+[0m→ [0mRead abogados\src\components\oficio\CalendarioTurnos.tsx[90m [limit=80][0m
+Now I'll create the component:
+[0m
+[0m← [0mWrite abogados\src\components\oficio\RegistroActuacion.tsx
+Wrote file successfully.[0m
+
+[0m$ [0mcd E:\derecho\abogados && npx tsc --noEmit 2>&1 | head -30
+Componente creado en `abogados/src/components/oficio/RegistroActuacion.tsx`.
+
+**Características implementadas:**
+- Formulario móvil-first (bottom sheet en móvil, modal en desktop)
+- Todos los campos requeridos: tipo actuación, juzgado, número procedimiento, fecha, hora inicio/fin, nombre detenido/cliente, delito, resultado, observaciones
+- Validación de campos obligatorios
+- Integración con el tipo `ActuacionOficio` y el servicio existente
+- Diseño responsive con temas (Tailwind 4)
+- Animaciones con Framer Motion
+- Estados de carga y errores
+
+
+=== PROMPT 3 COMPLETADO ===
+
+----------------------------------------
+PROMPT 4/4
+----------------------------------------
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N7 - Turnos de Oficio - Fase 2 (tarea 2.2), implementa la página src/pages/oficio/Actuaciones.tsx. Esta página debe mostrar la lista de actuaciones registradas y permitir crear nuevas. Cuando se registre una actuación, debe ofrecer la opc...
+
+OUTPUT:
+node.exe : 
+En C:\Users\usuario\AppData\Roaming\npm\npx.ps1: 24 Carácter: 5
++     & "node$exe"  "$basedir/node_modules/npm/bin/npx-cli.js" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+> build · MiniMax-M2.5
+[0m[0m
+[0m→ [0mRead C:\Users\usuario\AppData\Local\Temp\tmpC66F.tmp.txt
+[0m→ [0mRead abogados\DISENO_PENDIENTES.md
+[0m✗ [0mread failed
+[91m[1mError: [0mFile not found: E:\derecho\src\hooks\useTurnos.ts
+[0m✱ [0mGlob "**/*Turnos*"[90m in . · 3 matches[0m
+[0m→ [0mRead abogados\src\hooks\useTurnos.ts
+[0m✱ [0mGlob "**/types/oficio.ts"[90m in abogados · 1 match[0m
+[0m→ [0mRead abogados\src\types\oficio.ts
+[0m✱ [0mGlob "*.tsx"[90m in abogados\src\pages\oficio · 3 matches[0m
+[0m→ [0mRead abogados\src\services\oficioService.ts
+[0m✱ [0mGrep "interface Expediente"[90m in abogados\src · 3 matches[0m
+[0m✱ [0mGrep "export interface Expediente"[90m in abogados\src · 2 matches[0m
+[0m✱ [0mGlob "*.ts"[90m in abogados\src\types · 9 matches[0m
+[0m✱ [0mGrep "tipo.*oficio"[90m in abogados\src · 0 matches[0m
+[0m✱ [0mGlob "*.ts"[90m in abogados\src\services · 13 matches[0m
+[0m→ [0mRead abogados\src\pages\oficio\Turnos.tsx
+[0m✱ [0mGrep "createExpediente|expedienteService"[90m in abogados\src · 0 matches[0m
+[0m→ [0mRead abogados\src\pages\core\Expedientes.tsx[90m [limit=200][0m
+[0m✱ [0mGrep "tipoExpediente"[90m in abogados\src\data · 0 matches[0m
+[0m→ [0mRead abogados\src\data\expedientesData.ts[90m [limit=100][0m
+[0m→ [0mRead abogados\src\pages\oficio\Guardias.tsx
+Now I have enough context. I'll create the `Actuaciones.tsx` page following the existing patterns.
+[0m[0m← [0mWrite abogados\src\pages\oficio\Actuaciones.tsx
+Wrote file successfully.
+[0m
+
+[0m✱ [0mGrep "/oficio/Guardias"[90m in abogados\src · 1 match[0m
+[0m→ [0mRead abogados\src\App.tsx[90m [limit=100, offset=70][0m
+[0m[0m← [0mEdit abogados\src\App.tsxIndex: E:\derecho\abogados\src\App.tsx
+===================================================================
+--- E:\derecho\abogados\src\App.tsx
++++ E:\derecho\abogados\src\App.tsx
+@@ -72,8 +72,9 @@
+ // N7 - Turnos de Oficio
+ import OficioDashboard from './pages/oficio/DashboardOficio'
+ import Turnos from './pages/oficio/Turnos'
+ import Guardias from './pages/oficio/Guardias'
++import Actuaciones from './pages/oficio/Actuaciones'
+ 
+ // Otros
+ import Clientes from './pages/Clientes'
+ import ClienteDetail from './pages/ClienteDetail'
+[0m
+
+
+
+[0m← [0mEdit abogados\src\App.tsx
+Index: E:\derecho\abogados\src\App.tsx
+===================================================================
+--- E:\derecho\abogados\src\App.tsx
++++ E:\derecho\abogados\src\App.tsx
+@@ -163,8 +163,9 @@
+ {/* N7 - Turnos de Oficio */}
+ <Route path="/oficio/dashboard" element={<OficioDashboard />} />
+ <Route path="/oficio/turnos" element={<Turnos />} />
+ <Route path="/oficio/guardias" element={<Guardias />} />
++<Route path="/oficio/actuaciones" element={<Actuaciones />} />
+ 
+ {/* Otros (compatibilidad) */}
+ <Route path="/expedientes" element={<Expedientes />} />
+ <Route path="/expedientes/:id" element={<ExpedienteDetail />} />
+
+[0m
+[0m✱ [0mGrep "/oficio/guardias"[90m in abogados\src · 2 matches[0m
+[0m→ [0mRead abogados\src\components\layout\Sidebar.tsx[90m [limit=30, offset=185][0m
+[0m✱ [0mGrep "^import.*lucide-react"[90m in abogados\src\components\layout\Sidebar.tsx · 1 match[0m
+[0m→ [0mRead abogados\src\components\layout\Sidebar.tsx[90m [limit=40][0m
+[0m
+[0m← [0mEdit abogados\src\components\layout\Sidebar.tsx
+Index: E:\derecho\abogados\src\components\layout\Sidebar.tsx
+===================================================================
+--- E:\derecho\abogados\src\components\layout\Sidebar.tsx
++++ E:\derecho\abogados\src\components\layout\Sidebar.tsx
+@@ -189,8 +189,9 @@
+   items: [
+     { icon: LayoutDashboard, label: 'Dashboard', path: '/oficio/dashboard', roles: ['super_admin', 'socio', 
+'abogado_senior', 'abogado_junior'] },
+     { icon: Calendar, label: 'Turnos', path: '/oficio/turnos', roles: ['super_admin', 'socio', 'abogado_senior', 
+'abogado_junior'], badge: 5 },
+     { icon: Clock, label: 'Guardias', path: '/oficio/guardias', roles: ['super_admin', 'socio', 'abogado_senior', 
+'abogado_junior'] },
++    { icon: FileText, label: 'Actuaciones', path: '/oficio/actuaciones', roles: ['super_admin', 'socio', 
+'abogado_senior', 'abogado_junior'] },
+   ]
+ },
+ {
+   id: 'admin',
+
+[0m
+[0m$ [0mcd E:\derecho\abogados && npx tsc --noEmit 2>&1 | head -50
+Done. Created `src/pages/oficio/Actuaciones.tsx` with:
+
+- **List view** of actuaciones with filters (type, billing status) and search
+- **Create actuacion form** with all required fields: turno, tipo, fecha, juzgado, procedimiento, horas, detenido, delito, resultado
+- **Automatic expediente creation**: checkbox to create expediente with type "oficio", linking cliente, tipo caso, juzgado, número de procedimiento
+
+Added route `/oficio/actuaciones` in App.tsx and navigation link in Sidebar.tsx.
+
+
+=== PROMPT 4 COMPLETADO ===
+
+==========================================
+EJECUCION COMPLETADA - 02/22/2026 11:58:39
+==========================================

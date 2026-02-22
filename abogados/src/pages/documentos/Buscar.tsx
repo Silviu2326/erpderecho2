@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/Form';
 import { Card, Badge } from '@/components/ui';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { useToast } from '@/components/ui/Toast';
+import { AppLayout } from '@/components/layout/AppLayout';
 
 // Datos mock
 const documentosMock = [
@@ -68,6 +69,7 @@ export default function DocumentosBuscar() {
   };
 
   return (
+    <AppLayout title="Buscar Documentos" subtitle="Búsqueda full-text de documentos">
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -290,5 +292,6 @@ export default function DocumentosBuscar() {
         </motion.div>
       )}
     </div>
+    </AppLayout>
   );
 }

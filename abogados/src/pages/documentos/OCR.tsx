@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/Form';
 import { Card, Badge } from '@/components/ui';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
 import { LoadingOverlay } from '@/components/ui/Loading';
+import { AppLayout } from '@/components/layout/AppLayout';
 
 // Datos mock de reconocimientos anteriores
 const historialOCR = [
@@ -84,6 +85,7 @@ export default function DocumentosOCR() {
   };
 
   return (
+    <AppLayout title="OCR" subtitle="Reconocimiento óptico de caracteres">
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -325,5 +327,6 @@ export default function DocumentosOCR() {
         </div>
       </div>
     </div>
+    </AppLayout>
   );
 }

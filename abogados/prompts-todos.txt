@@ -1,0 +1,268 @@
+# Prompts para implementar las funcionalidades pendientes (Frontend Only)
+# Basado en DISENO_PENDIENTES.md
+# Stack: React 19 + Vite 7 + TypeScript 5.9 + Tailwind 4 + Framer Motion
+# Cada prompt está separado por una línea vacía
+
+################################################################################
+# N7 - Turnos de Oficio - Fase 2 (Registro de actuaciones)
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N7 - Turnos de Oficio - Fase 2 (tarea 2.1), implementa el componente src/components/oficio/RegistroActuacion.tsx. Este formulario móvil-first debe permitir registrar actuaciones de oficio con: tipo de actuación (Usa TipoActuacion de src/types/oficio.ts), juzgado, número de procedimiento, fecha, hora de inicio y fin, nombre del detenido/cliente, delito, resultado y observaciones. Usa los tipos existentes (ActuacionOficio) y el servicio src/services/oficioService.ts. Diseño responsive para uso desde móvil en el juzgado.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N7 - Turnos de Oficio - Fase 2 (tarea 2.2), implementa la página src/pages/oficio/Actuaciones.tsx. Esta página debe mostrar la lista de actuaciones registradas y permitir crear nuevas. Cuando se registre una actuación, debe ofrecer la opción de crear un expediente automáticamente con tipo "oficio", vinculando los datos (cliente, tipo de caso, Juzgado, número de procedimiento). Usa el hook useTurnos existente y los patrones del proyecto.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N7 - Turnos de Oficio - Fase 2 (tarea 2.3), implementa el componente src/components/oficio/HojaAsistenciaPDF.tsx que genere un PDF descargable. Debe incluir: nombre del abogado, número de colegiado, turno asignado, tipo de actuación, fecha, hora de inicio y fin, Juzgado, y resultado. Usa los tipos existentes y genera un PDF (puedes usar jspdf o window.print con estilos).
+
+Verifica que los archivos creados compilen correctamente con npx tsc --noEmit y no tengan errores de ESLint. Asegúrate de que las rutas estén configuradas en App.tsx.
+
+################################################################################
+# N7 - Turnos de Oficio - Fase 3 (Facturación y estadísticas)
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N7 - Fase 3 (tarea 3.1), implementa el archivo src/data/baremos.ts con las tarifas oficiales de Turno de Oficio por Comunidad Autónoma y tipo de actuación. Incluye datos de las principales CCAA (Madrid, Cataluña, Andalucía, Valencia, etc.) y los tipos de actuación más comunes.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N7 - Fase 3 (tarea 3.1), implementa el componente src/components/oficio/BaremoTable.tsx. Debe mostrar una tabla de tarifas oficiales por CCAA y tipo de actuación, permitir filtrar por comunidad, y calcular automáticamente el importe según el tipo de actuación seleccionada. Usa los datos de src/data/baremos.ts.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N7 - Fase 3 (tarea 3.2), implementa la página src/pages/oficio/Liquidacion.tsx. Debe generar un resumen trimestral de actuaciones para presentar al Colegio de Abogados con: selector de trimestre, lista de actuaciones del período, totales por tipo de actuación, importe total a facturar (usando BaremoTable), y opción de exportar a PDF.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N7 - Fase 3 (tarea 3.3), extiende el DashboardOficio.tsx existente en src/pages/oficio/ con estadísticas adicionales: gráfico de actuaciones por mes (puedes usar recharts o un simple chart CSS), comparación ingresos turno de oficio vs cliente privado, tipos de delito más frecuentes, juzgados más activos, y horas dedicadas a turno de oficio. Usa los datos existentes del servicio.
+
+Agrega la ruta /oficio/actuaciones y /oficio/liquidacion en App.tsx y añade los enlaces correspondientes en el Sidebar. Verifica que todo compile correctamente.
+
+Actualiza @abogados\DISENO_PENDIENTES.md marcando la Fase 2 y Fase 3 de N7 como completadas.
+
+################################################################################
+# M9 - LOPDGDD Compliance - Fase 1 (Registro RAT)
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M9 - LOPDGDD - Fase 1 (tarea 1.1), implementa los tipos de datos en src/types/lopdgdd.ts. Define: ActividadTratamiento (id, nombre, finalidad, base_legitimadora, categorias_datos[], categorias_interesados[], destinatarios, transferencias_internacionales, plazo_supresion, medidas_seguridad), Consentimiento (id, cliente_id, finalidad, fecha_consentimiento, canal, estado), SolicitudDerechos (id, cliente_id, tipo_derecho, fecha_solicitud, fecha_limite, estado, respuesta), y PoliticaRetencion (id, tipo_dato, plazo_conservacion, accion_expiracion).
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M9 - Fase 1 (tareas 1.1 y 1.2), implementa el servicio src/services/lopdgddService.ts con datos mock y métodos para: getActividades(), createActividad(), updateActividad(), deleteActividad(), getConsentimientos(cliente_id), createConsentimiento(), getSolicitudesDerechos(), createSolicitud(), updateSolicitud(). Incluye plantillas predefinidas de actividades para bufetes.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M9 - Fase 1 (tarea 1.2), implementa la página src/pages/lopdgdd/ActividadesTratamiento.tsx. CRUD para gestionar el Registro de Actividades de Tratamiento (RAT): lista con búsqueda, formulario para crear/editar actividad, botón de eliminar, y opciones para usar plantillas predefinidas ("Gestión de expedientes", "Facturación", "Marketing", "Portal cliente").
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M9 - Fase 1 (tarea 1.3), implementa el componente src/components/lopdgdd/RAT_ExportButton.tsx. Botón que exporta todas las actividades de tratamiento a un documento PDF formateado profesionalmente para presentar ante la AEPD. Incluye todos los campos de cada actividad.
+
+Implementa el hook src/hooks/useLOPDGDD.ts que centralice las operaciones del servicio y exponga: actividades, consentimientos, solicitudesDerechos, y funciones CRUD.
+
+Agrega las rutas /lopdgdd/actividades en App.tsx y el módulo en Sidebar. Verifica el build.
+
+################################################################################
+# M9 - LOPDGDD Compliance - Fase 2 (Consentimientos y Derechos)
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M9 - Fase 2 (tarea 2.1), implementa la página src/pages/lopdgdd/Consentimientos.tsx. Debe permitir: selector de cliente, lista de consentimientos del cliente, formulario para registrar nuevo consentimiento (finalidad, fecha, canal: web/email/presencial), y mostrar estado (activo/revocado). Usa el hook useLOPDGDD.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M9 - Fase 2 (tarea 2.2), implementa la página src/pages/lopdgdd/DerechosARSULIPO.tsx. Gestión del ejercicio de derechos (Acceso, Rectificación, Supresión, Limitación, Portabilidad, Oposición). Incluye: formulario de solicitud, lista de solicitudes con workflow de estado (recibida -> en_tramite -> respondida), alerta visual cuando se acerca el plazo legal de 1 mes, y registro de respuesta.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M9 - Fase 2 (tarea 2.3), implementa el componente src/components/lopdgdd/SupresionDatosModal.tsx. Modal con funcionalidad de "derecho al olvido": selector de cliente, muestra expedientes del cliente,checkboxes para seleccionar qué anonimizar, botón de ejecutar que marca datos como anonimizados y genera certificado de supresión PDF. Respeta obligaciones de conservación (no permite eliminar si hay expediente activo).
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M9 - Fase 2 (tarea 2.4), implementa el componente src/components/lopdgdd/ClausulaGenerator.tsx. Generador de cláusulas informativas Art. 13/14 RGPD: selector de canal (web/email/presencial), selector de finalidad, campos editables (nombre del bufete, CIF, dirección, email DPO), preview de la cláusula, y botón para copiar al portapapeles o descargar.
+
+Agrega las rutas /lopdgdd/consentimientos, /lopdgdd/derechos en App.tsx y actualiza el Sidebar. Verifica el build.
+
+################################################################################
+# M9 - LOPDGDD Compliance - Fase 3 (Seguridad y Retención)
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M9 - Fase 3 (tarea 3.1), implementa la página src/pages/lopdgdd/PoliticasRetencion.tsx. Gestión de políticas de retención: tabla con tipo de dato, plazo de conservación, acción al expirar (anonimizar/eliminar/archivar), selector de plazos típicos (expedientes activos=indefinido, cerrados=6 años, contables=6 años, logs=2 años), y botón "Ejecutar Análisis" que marca datos a eliminar.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M9 - Fase 3 (tarea 3.3), implementa el componente src/components/lopdgdd/EIPD_Wizard.tsx. Wizard para Evaluaciones de Impacto (EIPD): paso 1 - información del tratamiento (nombre, responsable, finalidad), paso 2 - datos recopilados (seleccionar de checklist), paso 3 - medidas de seguridad implementadas, paso 4 - análisis de riesgos (matriz impacto x probabilidad), paso 5 - resultado (aprobado/requiere_revision) y recomendaciones.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M9 - Fase 3 (tarea 3.4), implementa la página src/pages/lopdgdd/Brechas.tsx. Registro de brechas de seguridad: lista de incidentes, formulario para reportar nueva brecha, workflow visual (deteccion -> evaluacion_riesgo -> notificacion_aepd -> notificacion_afectados), alertas en rojo cuando hay brechas pendientes de notificar a la AEPD (plazo 72h), y selector de plantillas para notificación.
+
+Agrega las rutas /lopdgdd/politicas, /lopdgdd/eipd, /lopdgdd/brechas en App.tsx y actualiza Sidebar. Verifica build y actualiza DISENO_PENDIENTES.md marcando M9 completada.
+
+################################################################################
+# M3 - Legislación APIs BOE/CENDOJ - Fase 1
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M3 - Legislación - Fase 1 (tarea 1.1), implementa los tipos en src/types/legislacion.ts. Define: NormaBOE (id, titulo, referencia, tipo, fecha_publicacion, texto_html, materias[]), SentenciaCENDOJ (id, tribunal, sala, fecha_sentencia, ponente, numero_recurso, procedimiento, resumen, fallo), y AlertaLegislativa (id, materia, fecha_publicacion, norma_id, activa).
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M3 - Fase 1 (tareas 1.1 a 1.4), implementa el servicio src/services/boeService.ts con datos mock y métodos para: buscarNormas(query, filtros), getNormaById(id), getNormasPorTipo(tipo), getNormasPorFecha(inicio, fin), getNormasPorMateria(materia). Incluye al menos 10 normas de ejemplo realistas.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M3 - Fase 1 (tarea 1.3), implementa el componente src/components/biblioteca/BuscadorBOE.tsx. Busca legislación: campo de texto, filtros (tipo norma dropdown, rango fechas, materia dropdown), resultados en lista con preview (titulo, tipo, fecha), expandable para ver texto completo, y botón enlace externo al BOE.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M3 - Fase 1 (tarea 1.4), implementa el componente src/components/biblioteca/AlertaLegislativa.tsx. Suscripción a alertas: selector de materias, lista de alertas activas, toggle para activar/desactivar cada alerta, y notificación visual cuando hay nuevas alertas.
+
+Implementa el hook src/hooks/useLegislacion.ts que use los servicios boeService y cendojService.
+
+Modifica src/pages/biblioteca/Legislacion.tsx existente para integrar el BuscadorBOE y mostrar resultados. Verifica el build.
+
+################################################################################
+# M3 - Legislación APIs BOE/CENDOJ - Fase 2
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M3 - Fase 2 (tareas 2.1 a 2.4), implementa el servicio src/services/cendojService.ts con datos mock y métodos para: buscarSentencias(query, filtros), getSentenciaById(id), getSentenciasPorTribunal(tribunal), getSentenciasPorFecha(inicio, fin). Incluye al menos 10 sentencias de ejemplo realistas.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M3 - Fase 2 (tarea 2.4), implementa el componente src/components/biblioteca/ResultadoSentencia.tsx. Muestra resultado de búsqueda jurisprudencial: tribunal, sala, fecha, ponente, número de recurso, procedimiento, resumen expandible, fallo, y botón "Vincular a Expediente".
+
+Modifica src/pages/biblioteca/Legislacion.tsx para incluir pestañas o sección de jurisprudencia CENDOJ. Verifica build.
+
+################################################################################
+# M3 - Legislación APIs BOE/CENDOJ - Fase 3
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M3 - Fase 3 (tarea 3.1), añade a boeService la lógica de sync automático simulado. Método getNovedades() que retorna normas publicadas desde la última fecha consultada.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M3 - Fase 3 (tarea 3.2), añade a los tipos legislacion.ts el campo "derogada_por" a NormaBOE y implementa en boeService el método detectarDerogaciones() que marca normas derogadas cuando una nueva tiene referencia a la antigua.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección M3 - Fase 3 (tarea 3.3), implementa la página src/pages/biblioteca/NovedadesLegislativas.tsx. Muestra las últimas publicaciones: lista cronológica de nuevas normas, filtros por materia, badges de "nuevo", y opción de suscribirse a alertas por materia.
+
+Verifica build y actualiza DISENO_PENDIENTES.md marcando M3 completada.
+
+################################################################################
+# F6 - Integración Office 365 / Google - Fase 1
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F6 - Integración - Fase 1 (tarea 1.1), implementa los tipos en src/types/integraciones.ts. Define: Integracion (id, tipo: microsoft/google, estado: conectado/desconectado, cuenta, ultima_sincronizacion), CalendarioEvent (id, titulo, fecha_inicio, fecha_fin, calendario_origen, externo_id), EmailMessage (id, asunto, cuerpo, de, para, expediente_id, fecha).
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F6 - Fase 1 (tarea 1.2), implementa el servicio src/services/microsoftService.ts con datos mock y métodos para: getEstadoConexion(), conectar(), desconectar(), getEventosCalendario(desde, hasta), sincronizarEvento(evento), eliminarEventoSincronizado(externo_id). Simula OAuth flow.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F6 - Fase 1 (tarea 1.2), implementa el servicio src/services/googleService.ts con estructura similar a microsoftService pero para Google Workspace.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F6 - Fase 1 (tareas 1.3 y 1.4), implementa la página src/pages/configuracion/Integraciones.tsx. UI de conexión: botones "Conectar con Microsoft 365" y "Conectar con Google Workspace" con iconos, estado de cada integración (card con cuenta, estado, última sincronización), botón de desconectar, y modal de configuración avanzada.
+
+Agrega la ruta /configuracion/integraciones en App.tsx y añade opción en Sidebar (puede ser dentro de Configuración o nuevo módulo). Verifica build.
+
+################################################################################
+# F6 - Integración Office 365 / Google - Fase 2
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F6 - Fase 2 (tareas 2.1 a 2.3), implementa el hook src/hooks/useCalendarSync.ts. Sincronización bidireccional: sincronizarEventoToExternal(evento), sincronizarFromExternal(), detectarConflictos(), resolverConflicto(eventoId, accion: mantener_erp | mantener_externo | fusionar). Usa microsoftService y googleService.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F6 - Fase 2 (tarea 2.1), implementa el componente src/components/integraciones/CalendarSyncStatus.tsx. Muestra estado: última sincronización, próximo sync programado (simulado), lista de eventos sincronizados recientes, y errores si los hay con botón de reintentar.
+
+Verifica build.
+
+################################################################################
+# F6 - Integración Office 365 / Google - Fase 3
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F6 - Fase 3 (tarea 3.1), implementa el componente src/components/integraciones/EmailVincularModal.tsx. Modal para vincular email a expediente: selector de expediente, muestra asunto y cuerpo del email, botón de confirmar vinculación, y lista de emails ya vinculados a cada expediente.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F6 - Fase 3 (tarea 3.2), extiende el servicio microsoftService y googleService con métodos para enviarEmail(destinatario, asunto, cuerpo, expediente_id). Simula envío.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F6 - Fase 3 (tarea 3.3), implementa la funcionalidad de sync de documentos. Añade a los servicios métodos para: getCarpetasExpediente(expedienteId), subirDocumento(file, expedienteId), descargarDocumento(documentoId). Simula integración con OneDrive/Drive.
+
+Implementa el hook src/hooks/useEmailIntegration.ts que use los servicios. Verifica build y actualiza DISENO_PENDIENTES.md.
+
+################################################################################
+# F7 - Multi-idioma / Multi-divisa - Fase 1
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F7 - Multi-idioma - Fase 1 (tarea 1.1), instala las dependencias necesarias (npm install i18next react-i18next i18next-browser-languagedetector) y configura src/i18n.ts con español como idioma base, detection de idioma del navegador, y configuración de namespaces.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F7 - Fase 1 (tarea 1.2), crea el archivo public/locales/es/translation.json con las traducciones del proyecto. Extrae los strings principales de las páginas existentes (Dashboard, Expedientes, Clientes, etc.) y crea un archivo base con al menos 100 keys.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F7 - Fase 1 (tarea 1.2), crea el archivo public/locales/en/translation.json con la traducción al inglés de las mismas keys.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F7 - Fase 1 (tarea 1.4), implementa el componente src/components/ui/LanguageSelector.tsx. Dropdown para seleccionar idioma: opciones Español/Inglés, detecta idioma del navegador como default, guarda selección en localStorage, y cambia el idioma de la app al seleccionar.
+
+Envuelve la aplicación en i18n en el punto de entrada (main.tsx o App.tsx). Verifica build.
+
+################################################################################
+# F7 - Multi-idioma / Multi-divisa - Fase 2
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F7 - Multi-idioma - Fase 2 (tareas 2.1 a 2.3), implementa el hook src/hooks/useCurrency.ts. Funciones: getDivisa(), setDivisa(divisa), formatear(amount, moneda?), obtenerTasaCambio(desde, hasta). Usa Intl.NumberFormat para formateo. Datos mock de tasas de cambio.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F7 - Fase 2 (tarea 2.1), implementa el componente src/components/ui/CurrencySelector.tsx. Selector de divisa del bufete: dropdown con opciones (EUR, USD, GBP, MXN), guarda en configuración, y actualiza el formateo global.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F7 - Fase 2 (tarea 2.3), añade al servicio de tasas de cambio la integración con una API gratuita (puedes simular o usar exchangerate-api.com si tiene endpoint público). Cachea resultados en localStorage por 24h.
+
+Reemplaza los formatos de moneda hardcoded en la app por el hook useCurrency. Verifica build y actualiza DISENO_PENDIENTES.md.
+
+################################################################################
+# F7 - Multi-idioma / Multi-divisa - Fase 3 (opcional)
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F7 - Fase 3 (tarea 3.1), crea el archivo public/locales/ca/translation.json con traducción al catalán de las keys principales.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F7 - Fase 3 (tarea 3.1), crea el archivo public/locales/eu/translation.json con traducción al euskera.
+
+Añade las nuevas opciones al LanguageSelector. Verifica build.
+
+################################################################################
+# N2 - Análisis Predictivo - Fase 1
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N2 - Análisis Predictivo - Fase 1 (tarea 1.1), implementa los tipos en src/types/prediccion.ts. Define: DatasetExpediente (tipo_caso, jurisdiccion, juzgado, parte_contraria_tipo, cuantia, duracion_dias, resultado, coste_real, horas_dedicadas, complejidad), Prediccion (expediente_id, probabilidad_exito, duracion_estimada: {min, max, media}, coste_estimado: {min, max, media}), ConfiguracionModelo (precision, fecha_entrenamiento, casos_entrenamiento).
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N2 - Fase 1 (tareas 1.1 a 1.3), implementa el servicio src/services/prediccionService.ts con datos mock. Métodos: getPrediccion(expedienteId) - retorna predicción simulada basada en el tipo de caso, getCasosSimilares(expedienteId) - retorna 3-5 casos cerrados similares, getEstadisticasModelo() - retorna precisión, fecha entrenamiento, número de casos.
+
+Implementa el hook src/hooks/usePrediccion.ts que use el servicio.
+
+################################################################################
+# N2 - Análisis Predictivo - Fase 3
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N2 - Fase 3 (tarea 3.1), implementa el componente src/components/prediccion/PrediccionWidget.tsx. Card para mostrar en ExpedienteDetail: gauge circular de probabilidad de éxito (0-100%), timeline visual con rango de duración estimada, y card de coste estimado con rango (mín-máx). Usa los datos del servicio de predicción.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N2 - Fase 3 (tarea 3.1), implementa el componente src/components/prediccion/GaugeChart.tsx. Gauge circular reutilizable para mostrar porcentaje (probabilidad). Con animación y color según umbral (verde >70%, amarillo 40-70%, rojo <40%).
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N2 - Fase 3 (tarea 3.2), implementa la página src/pages/prediccion/Dashboard.tsx. Dashboard predictivo: gráfico de distribución de probabilidades (barras), lista de casos en riesgo (<40% probabilidad), heatmap de duración media por tipo de caso, y card de precisión del modelo.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N2 - Fase 3 (tarea 3.3), implementa el componente src/components/prediccion/CasosSimilares.tsx. Muestra casos cerrados similares al actual: lista de 3-5 casos con tipo, jurisdicción, resultado real, duración real, coste real, y comparación visual con la predicción actual.
+
+Agrega la ruta /prediccion/dashboard en App.tsx y añade opción en Sidebar. Modifica src/pages/ExpedienteDetail.tsx para incluir el PrediccionWidget. Verifica build y actualiza DISENO_PENDIENTES.md.
+
+################################################################################
+# F5 - App Móvil Nativa - Fase 1 (Setup)
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F5 - App Móvil - Fase 1 (tarea 1.1), instala Capacitor en el proyecto: npm install @capacitor/core @capacitor/cli @capacitor/haptics @capacitor/status-bar, y configura capacitor.config.ts apuntando al build de Vite (dist o build).
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F5 - Fase 1 (tarea 1.4), implementa el hook src/hooks/usePlatform.ts. Detección de plataforma: retorna 'web' | 'ios' | 'android', detecta usando Capacitor.isNativePlatform() y window, y proporciona útiles (isMobile, isDesktop, isNative).
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F5 - Fase 1 (tarea 1.1), configura los iconos y splash screen básicos. Crea la estructura de carpetas ios/ y android/ con npx cap init (configuración básica, no build completo).
+
+################################################################################
+# F5 - App Móvil Nativa - Fase 2 (Vistas)
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F5 - Fase 2 (tarea 2.1), implementa el layout src/layouts/MobileLayout.tsx. Layout específico para móvil: header simplificado (solo título + botón atrás), bottom tab bar con 5 tabs (Dashboard, Expedientes, Calendario, Mensajes, Más), y ajustes de safe area para iOS.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F5 - Fase 2 (tarea 2.1), implementa el componente src/components/mobile/BottomTabBar.tsx. Barra de navegación inferior: iconos de las 5 secciones, indicador activo, y soporte para ripple/haptic en móvil.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F5 - Fase 2 (tarea 2.2), implementa el componente src/components/mobile/MobileDashboard.tsx. Dashboard móvil compacto: sección de audiencias hoy/manana (lista scrollable), tareas pendientes (checklist), alertas de prescripción (badges), y notificaciones recientes.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección F5 - Fase 2 (tarea 2.3), implementa el componente src/components/mobile/MobileExpedienteList.tsx. Lista de expedientes para móvil: search bar, lista con pull-to-refresh, cada item muestra número, cliente, tipo, estado, y fecha. Al click abre detalle.
+
+Modifica la navegación para usar MobileLayout cuando se detecta plataforma móvil (usa el hook usePlatform). Verifica build.
+
+################################################################################
+# N9 - Marketplace de Integraciones - Fase 1
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N9 - Marketplace - Fase 1 (tarea 1.1), implementa los tipos en src/types/marketplace.ts. Define: IntegracionMarketplace (id, nombre, descripcion, categoria, estado: activo/beta/pronto, logo), APIKey (id, nombre, clave, permisos[], fecha_creacion, ultima_uso), Webhook (id, url, eventos[], activo).
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N9 - Fase 1 (tareas 1.2 y 1.3), implementa el servicio src/services/marketplaceService.ts con datos mock y métodos para: getIntegraciones(), getAPIKeys(), createAPIKey(), deleteAPIKey(), getWebhooks(), createWebhook(), toggleWebhook().
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N9 - Fase 1 (tarea 1.4), implementa la página src/pages/marketplace/Developers.tsx. Portal para desarrolladores: documentación de endpoints, ejemplos de código en JavaScript/TypeScript, y playground para probar llamadas API (simulado).
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N9 - Fase 1 (tarea 1.2), implementa la página src/pages/marketplace/APIKeys.tsx. Gestión de API keys: lista de keys existentes, botón de crear nueva (modal con nombre y permisos), botón de eliminar, y muestra fecha de última uso.
+
+Agrega rutas /marketplace/developers, /marketplace/keys en App.tsx y opción en Sidebar. Verifica build.
+
+################################################################################
+# N9 - Marketplace de Integraciones - Fase 2
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N9 - Fase 2 (tareas 2.1 a 2.5), implementa los servicios de registros: src/services/registroMercantilService.ts, src/services/registroPropiedadService.ts, src/services/catastroService.ts, src/services/aeatService.ts, src/services/seguridadSocialService.ts. Cada uno con métodos mock de consulta (buscarEmpresa(cif), buscarPropiedad(ref), etc.) y datos de ejemplo.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N9 - Fase 2 (tareas 2.1 y 2.2), implementa el hook src/hooks/useConsultaRegistro.ts. Hook unificado para consultas a registros: consultaRegistro(tipo, parametros), retorna estado de carga, resultado, y error.
+
+Implementa el hook src/hooks/useMarketplace.ts que centralice las operaciones del marketplace.
+
+################################################################################
+# N9 - Marketplace de Integraciones - Fase 3
+################################################################################
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N9 - Fase 3 (tarea 3.1), implementa la página src/pages/marketplace/Marketplace.tsx. Catálogo visual de integraciones: grid de cards con logo, nombre, descripción, estado (badge), botón de activar/desactivar, y botón de configurar.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N9 - Fase 3 (tarea 3.2), implementa el componente src/components/marketplace/ConsultaRapidaWidget.tsx. Widget de consulta rápida: selector de tipo de registro (Mercantil, Propiedad, Catastro), campo de CIF/referencia, botón de buscar, y resultado en modal con los datos parseados.
+
+Siguiendo el diseño en @abogados\DISENO_PENDIENTES.md sección N9 - Fase 3 (tarea 3.3), implementa la página src/pages/marketplace/IntegracionDetail.tsx. Detalle de cada integración: descripción completa, configuración específica (api keys propias, etc.), historial de uso, y opciones de soporte.
+
+Agrega ruta /marketplace en App.tsx y actualiza Sidebar. Verifica build y actualiza DISENO_PENDIENTES.md marcando todo como completado.

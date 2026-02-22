@@ -1,8 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import LandingPage from './pages/LandingPage'
+import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import Register from './pages/Register'
-import Dashboard from './pages/Dashboard'
 
 // M1 - Core Legal
 import Expedientes from './pages/core/Expedientes'
@@ -23,13 +22,13 @@ import Gastos from './pages/finanzas/Gastos'
 import Rentabilidad from './pages/finanzas/Rentabilidad'
 
 // M4 - Cobranza
-import CobranzaDashboard from './pages/cobranza/Dashboard'
+import Cobranza from './pages/cobranza/Cobranza'
 import CobranzaProveedores from './pages/cobranza/Proveedores'
 import CobranzaConfig from './pages/cobranza/Config'
 
 // M5 - Tiempo & Tareas
 import Tareas from './pages/tiempo/Tareas'
-import Tiempo from './pages/tiempo/Tracking'
+import Tiempo from './pages/tiempo/Tiempo'
 import TiempoInformes from './pages/tiempo/Informes'
 
 // M6 - Comunicaciones
@@ -41,7 +40,7 @@ import Notificaciones from './pages/comunicaciones/Notificaciones'
 import PortalCliente from './pages/portal/PortalCliente'
 
 // M8 - Firmas Digitales
-import Firmas from './pages/firmas/Firmas'
+import Firmas from './pages/firmas/SignatureManagement'
 
 // M9 - Informes & BI
 import Informes from './pages/informes/Informes'
@@ -57,16 +56,25 @@ import IAGenerador from './pages/ia/Generador'
 
 // M12 - Biblioteca Forense
 import ForenseVerificar from './pages/forense/Verificar'
-import ForenseInformes from './pages/forense/Informes'
 
 // M13 - Integraciones
 import Lexnet from './pages/integraciones/Lexnet'
 
 // Admin
 import Admin from './pages/admin/Admin'
-import Configuracion from './pages/admin/Configuracion'
-import Usuarios from './pages/admin/Usuarios'
-import AdminClientes from './pages/admin/AdminClientes'
+
+// F4 - CRM Pipeline
+import CRMPipeline from './pages/crm/Pipeline'
+import CRMLeads from './pages/crm/Leads'
+import CRMContacto from './pages/crm/Contacto'
+import CRMDashboard from './pages/crm/DashboardCRM'
+
+// N7 - Turnos de Oficio
+import OficioDashboard from './pages/oficio/DashboardOficio'
+import Turnos from './pages/oficio/Turnos'
+import Guardias from './pages/oficio/Guardias'
+import Actuaciones from './pages/oficio/Actuaciones'
+import Liquidacion from './pages/oficio/Liquidacion'
 
 // Otros
 import Clientes from './pages/Clientes'
@@ -81,7 +89,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Landing & Auth */}
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<Dashboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
@@ -105,7 +113,7 @@ function App() {
         <Route path="/finanzas/rentabilidad" element={<Rentabilidad />} />
 
         {/* M4 - Cobranza */}
-        <Route path="/cobranza/dashboard" element={<CobranzaDashboard />} />
+        <Route path="/cobranza/dashboard" element={<Cobranza />} />
         <Route path="/cobranza/proveedores" element={<CobranzaProveedores />} />
         <Route path="/cobranza/config" element={<CobranzaConfig />} />
 
@@ -140,16 +148,25 @@ function App() {
 
         {/* M12 - Biblioteca Forense */}
         <Route path="/forense/verificar" element={<ForenseVerificar />} />
-        <Route path="/forense/informes" element={<ForenseInformes />} />
 
         {/* M13 - Integraciones */}
         <Route path="/integraciones/lexnet" element={<Lexnet />} />
 
         {/* Admin */}
-        <Route path="/admin/config" element={<Configuracion />} />
-        <Route path="/admin/usuarios" element={<Usuarios />} />
-        <Route path="/admin/clientes" element={<AdminClientes />} />
         <Route path="/admin" element={<Admin />} />
+
+        {/* F4 - CRM Pipeline */}
+        <Route path="/crm/dashboard" element={<CRMDashboard />} />
+        <Route path="/crm/pipeline" element={<CRMPipeline />} />
+        <Route path="/crm/leads" element={<CRMLeads />} />
+        <Route path="/contacto" element={<CRMContacto />} />
+
+        {/* N7 - Turnos de Oficio */}
+        <Route path="/oficio/dashboard" element={<OficioDashboard />} />
+        <Route path="/oficio/turnos" element={<Turnos />} />
+        <Route path="/oficio/guardias" element={<Guardias />} />
+        <Route path="/oficio/actuaciones" element={<Actuaciones />} />
+        <Route path="/oficio/liquidacion" element={<Liquidacion />} />
 
         {/* Otros (compatibilidad) */}
         <Route path="/expedientes" element={<Expedientes />} />
@@ -162,7 +179,7 @@ function App() {
         <Route path="/biblioteca" element={<Biblioteca />} />
         <Route path="/tareas" element={<Tareas />} />
         <Route path="/audiencias" element={<Audiencias />} />
-        <Route path="/cobranza" element={<CobranzaDashboard />} />
+        <Route path="/cobranza" element={<Cobranza />} />
         <Route path="/gastos" element={<Gastos />} />
         <Route path="/plantillas" element={<Plantillas />} />
         <Route path="/notificaciones" element={<Notificaciones />} />

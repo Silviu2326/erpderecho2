@@ -4,7 +4,7 @@
 import { useState, useRef, ReactNode, ButtonHTMLAttributes } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, Check, X } from 'lucide-react';
-import { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
 type ButtonSize = 'sm' | 'md' | 'lg';

@@ -8,6 +8,7 @@ import {
   ChevronRight, ChevronDown, Building2, User, Calendar,
   AlertCircle, CheckCircle, FileSignature
 } from 'lucide-react';
+import { AppLayout } from '@/components/layout/AppLayout';
 
 // Tipos de escritos disponibles
 const tiposEscritos = [
@@ -114,6 +115,7 @@ Abogado - Colegiado nº ____`;
   }, {} as Record<string, typeof tiposEscritos>);
 
   return (
+    <AppLayout title="Generador de Escritos" subtitle="Generación automática con IA">
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -304,5 +306,6 @@ Abogado - Colegiado nº ____`;
         </div>
       </div>
     </div>
+    </AppLayout>
   );
 }

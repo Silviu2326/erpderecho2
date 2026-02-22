@@ -9,9 +9,11 @@ import {
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useToast } from '@/components/ui/Toast';
-import { Button, Input } from '@/components/ui';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Form';
 import { Card, Badge } from '@/components/ui';
 import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
+import { AppLayout } from '@/components/layout/AppLayout';
 
 // Tipos
 interface Message {
@@ -127,6 +129,7 @@ export default function IAChat() {
   };
 
   return (
+    <AppLayout title="Chat IA" subtitle="Copiloto AI para asistencia legal">
     <div className="flex h-[calc(100vh-120px)]">
       {/* Sidebar - Historial */}
       <div className="w-64 border-r border-theme bg-theme-card p-4 hidden md:block">
@@ -280,5 +283,6 @@ export default function IAChat() {
         </div>
       </div>
     </div>
+    </AppLayout>
   );
 }

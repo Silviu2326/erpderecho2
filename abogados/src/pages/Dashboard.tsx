@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useDashboard } from '@/hooks/useDashboard';
 import { useRole } from '@/hooks/useRole';
-import { Sidebar } from '@/components/layout/Sidebar';
+import Sidebar from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { SearchModal } from '@/components/layout/SearchModal';
 import type { UserRole } from '@/types/roles';

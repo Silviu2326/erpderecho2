@@ -8,6 +8,7 @@ import {
   AlertTriangle, User, Calendar, MapPin, Fingerprint,
   Search, RefreshCw, Download, Eye
 } from 'lucide-react';
+import { AppLayout } from '@/components/layout/AppLayout';
 
 // Datos mock de verificaciones anteriores
 const historialVerificaciones = [
@@ -76,6 +77,7 @@ export default function ForenseVerificar() {
   };
 
   return (
+    <AppLayout title="Verificar Documentos" subtitle="Verificación de autenticidad">
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -293,5 +295,6 @@ export default function ForenseVerificar() {
         </div>
       </div>
     </div>
+    </AppLayout>
   );
 }

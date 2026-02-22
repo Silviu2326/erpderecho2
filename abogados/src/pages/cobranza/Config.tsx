@@ -7,6 +7,7 @@ import {
   Settings, Bell, Mail, Calendar, Clock, AlertTriangle,
   Save, RefreshCw, Check, X, Plus, Trash2
 } from 'lucide-react';
+import { AppLayout } from '@/components/layout/AppLayout';
 
 // Datos mock
 const recordatoriosMock = [
@@ -60,6 +61,7 @@ export default function CobranzaConfig() {
   };
 
   return (
+    <AppLayout title="Configuración Cobranza" subtitle="Alertas, recordatorios y automatización">
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -295,5 +297,6 @@ export default function CobranzaConfig() {
         </div>
       )}
     </div>
+    </AppLayout>
   );
 }
