@@ -819,3 +819,25 @@ export async function sincronizarFuentes(): Promise<EstadoSincronizacion> {
 // ============================================
 
 export { MOCK_BOE_DOCUMENTS, MOCK_CENDOJ_DOCUMENTS, MOCK_CODIGOS };
+
+// ============================================
+// FUNCIÓN SIMPLIFICADA DE BÚSQUEDA
+// ============================================
+
+export interface BuscarNormasParams {
+  texto?: string;
+  tipo?: TipoDocumento;
+  fechaDesde?: Date;
+  fechaHasta?: Date;
+}
+
+export async function buscarNormas(params: BuscarNormasParams): Promise<BusquedaResponse> {
+  return busquedaAvanzada({
+    query: params.texto,
+    tipo: params.tipo ? [params.tipo] : undefined,
+    fechaDesde: params.fechaDesde,
+    fechaHasta: params.fechaHasta,
+    pagina: 1,
+    limit: 20,
+  });
+}

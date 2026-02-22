@@ -52,7 +52,7 @@ export interface BOEDocument {
   number: string;
   date: string;
   title: string;
-  type: 'ley' | 'real-decreto' | 'orden' | 'resolucion' | 'circular';
+  type: 'ley' | 'real-decreto' | 'orden' | 'resolucion' | 'circular' | 'instruccion';
   ministry: string;
   summary: string;
   pdfUrl?: string;

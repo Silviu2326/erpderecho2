@@ -1,0 +1,11 @@
+Crea un componente NovedadesLegislativas.tsx en src/pages/legislacion/ para mostrar el panel de novedades legislativas. Debe incluir:
+- Lista de últimas normas publicadas (del BOE)
+- Filtrado por tipo de norma y materia
+- Destacado de normas que pueden afectar al bufete
+- Indicador de derogaciones de normas seguidas
+- Acceder directamente al detalle de cada norma
+- Configuración de palabras clave para personalización
+- Actualización automática (polling cada hora)
+
+Usa boeService.getNovedades() y detectarDerogaciones().
+

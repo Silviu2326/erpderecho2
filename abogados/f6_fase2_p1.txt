@@ -1,0 +1,11 @@
+Crea un hook useCalendarSync.ts en src/hooks/ para sincronizar eventos con calendarios externos. Debe incluir:
+- Sincronización bidireccional con Google Calendar y Outlook
+- Detección de conflictos de horario
+- Mapeo de eventos del bufete a eventos externos
+- Estado de sincronización (syncing, error, success)
+- Programación de sincronización automática
+- Resolución de conflictos manual
+- Historial de sincronización
+
+Usa microsoftService y googleService.
+

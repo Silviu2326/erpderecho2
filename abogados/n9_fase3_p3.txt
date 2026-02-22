@@ -1,0 +1,11 @@
+Crea un componente IntegracionDetail.tsx en src/pages/admin/ para mostrar el detalle de una integración. Debe incluir:
+- Información de la integración
+- Configuración y credenciales
+- Historial de uso
+- Métricas (llamadas, errores, tiempo respuesta)
+- Logs de errores
+- Documentación específica
+- Botones de acción (activar, desactivar, configurar)
+
+Usa marketplaceService y useMarketplace.
+

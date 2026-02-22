@@ -1,0 +1,8 @@
+Crea el archivo de tipos src/types/prediccion.ts para el módulo de análisis predictivo. Debe incluir:
+- Tipos para modelos de predicción (entrada, salida, métricas)
+- Tipos para casos similares encontrados
+- Tipos para indicadores de riesgo
+- Tipos para recomendaciones basadas en datos históricos
+- Interfaces para configuraciones de predicción
+- Enums para tipo de predicción, nivel de confianza
+

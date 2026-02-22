@@ -1,0 +1,13 @@
+Crea un componente ResultadoSentencia.tsx en src/pages/legislacion/ para mostrar el detalle de una sentencia. Debe incluir:
+- Datos del tribunal, sala, ponente, fecha
+- Procedimiento y objeto del litigio
+- Antecedentes de hecho (resumidos)
+- Fundamentos de derecho (resumidos con opción de ver completo)
+- Fallo/parte dispositiva
+- Voto particular (si existe)
+- Botones para descargar PDF, citar, compartir
+- Normas citadas con enlaces al BOE
+- Sentencias relacionadas
+
+Usa tipos de jurisprudencia de legislacion.ts.
+

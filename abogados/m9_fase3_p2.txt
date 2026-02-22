@@ -1,0 +1,12 @@
+Crea un componente EIPD_Wizard.tsx (Evaluación de Impacto en Protección de Datos) en src/components/lopdgdd/. Debe ser un wizard paso a paso:
+1. Descripción del tratamiento y finalidades
+2. Necesidad y proporcionalidad
+3. Categorías de datos y interesados
+4. Transferencias internacionales
+5. Medidas de seguridad
+6. Evaluación de riesgos
+7. Consulta previa a autoridad (si procede)
+8. Generación del informe EIPD
+
+Cada paso con validación. Guardado automático. Export a PDF del informe final.
+

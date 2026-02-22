@@ -1,0 +1,9 @@
+Configura el sistema de internacionalización (i18n) en el proyecto. Debe incluir:
+- Instalación y configuración de react-i18next
+- Estructura de archivos de traducción (/locales/es.json, /locales/en.json)
+- Configuración de idioma por defecto y idiomas soportados
+- Hook useTranslation() integrado
+- Cambio de idioma sin recarga de página
+- Persistencia del idioma en localStorage
+- Traducciones para los elementos UI principales (botones, menús, formularios, mensajes)
+

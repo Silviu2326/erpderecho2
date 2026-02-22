@@ -1,0 +1,11 @@
+Crea un componente SupresionDatosModal.tsx en src/components/lopdgdd/ para el ejercicio del derecho de supresión (derecho al olvido). Debe incluir:
+- Información sobre qué datos se eliminarán
+- Opciones de qué preservar (ej: facturas por obligación legal)
+- Confirmación con verificación de identidad
+- Estimación de qué sistemas se verán afectados
+- Opción de anonimización en lugar de supresión total
+- Descarga de los datos antes de eliminar
+- Envío de confirmación por email
+
+Usa lopdgdService.eraseUserData() y lopdgdService.exportUserData().
+

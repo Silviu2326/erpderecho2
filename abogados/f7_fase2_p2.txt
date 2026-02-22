@@ -1,0 +1,10 @@
+Crea un componente CurrencySelector.tsx en src/components/ui/ para seleccionar la moneda de la aplicación. Debe incluir:
+- Dropdown con monedas disponibles (EUR, USD, GBP, CHF)
+- Código de moneda y símbolo visual
+- Cambio de moneda instantáneo
+- Persistencia de la preferencia
+- Diseño consistente con LanguageSelector
+- Indicador de moneda activa
+
+Usa el hook useCurrency.
+

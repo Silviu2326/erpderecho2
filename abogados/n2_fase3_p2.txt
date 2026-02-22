@@ -1,0 +1,8 @@
+Crea un componente GaugeChart.tsx en src/components/charts/ para mostrar indicadores visuales tipo gauge. Debe incluir:
+- Visualización de porcentaje (0-100%)
+- Colores según rango (rojo/amarillo/verde)
+- Etiqueta y valor numérico
+- Animación de entrada
+- Configurable (título, umbrales, tamaño)
+- Uso de recharts o similar
+

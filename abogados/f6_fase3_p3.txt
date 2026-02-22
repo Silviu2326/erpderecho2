@@ -1,0 +1,9 @@
+Añade a microsoftService y googleService la función syncDocumentos() para sincronizar documentos con OneDrive y Google Drive. Debe incluir:
+- Subida de documentos a la nube
+- Descarga de documentos desde la nube
+- Sincronización bidireccional
+- Detección de conflictos (versión local vs nube)
+- Filtrado por tipo de documento
+- Progress bar para transferencias grandes
+- Caché de metadatos
+

@@ -1,0 +1,7 @@
+Crea el archivo de traducciones src/locales/eu.json con todas las traducciones al euskera (vasco). Debe incluir:
+- Navegación, botones, formularios, mensajes
+- Textos del dashboard y páginas principales
+-相同 estructura que es.json y en.json
+
+Traduce al euskera.
+

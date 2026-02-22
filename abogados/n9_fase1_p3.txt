@@ -1,0 +1,8 @@
+Crea un componente Developers.tsx en src/pages/admin/ para la sección de desarrolladores del marketplace. Debe incluir:
+- Documentación de APIs disponibles
+- Ejemplos de código para cada integración
+- Endpoint y métodos disponibles
+- Autenticación y manejo de errores
+- Link a documentación externa
+- Busca en componentes existentes para seguir el estilo
+

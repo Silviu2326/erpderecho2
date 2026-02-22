@@ -1,0 +1,11 @@
+Crea un componente EmailVincularModal.tsx en src/components/integraciones/ para vincular cuentas de email. Debe incluir:
+- Selector de proveedor (Microsoft, Google)
+- Flujo OAuth para autenticación
+- Indicador de progreso de conexión
+- Permisos requeridos explicados
+- Manejo de errores de autenticación
+- Cuenta vinculada exitosamente
+- Opción de desvincular cuenta
+
+Usa microsoftService y googleService.
+

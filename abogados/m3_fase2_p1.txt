@@ -1,0 +1,10 @@
+Crea un servicio cendojService.ts en src/services/ para consultar jurisprudencia del CENDOJ (Centro de Documentación Judicial). Debe incluir:
+- Búsqueda de sentencias por tribunal, año, procedimiento, materia
+- Filtros por ponente, sala, tipo de fallo
+- Obtener texto completo de sentencia
+- Descarga de PDFs
+- Caché en localStorage
+- Simulación de datos si API no disponible
+
+Usa tipos de src/types/legislacion.ts para jurisprudencia.
+

@@ -1,0 +1,10 @@
+Crea un componente Consentimientos.tsx en src/components/lopdgdd/ para gestionar los consentimientos de usuarios. Debe incluir:
+- Lista de todos los consentimientos registrados
+- Filtrado por tipo de consentimiento y estado
+- Modal para solicitar nuevo consentimiento
+- Visualización del historial de consentimientos por usuario
+- Indicadores visuales de consentimiento vigente/expirado
+- Botón para exportar consentimientos a CSV
+
+Usa los tipos y servicio de lopdgdService (Consent, ConsentType, ConsentStatus).
+

@@ -1,0 +1,8 @@
+Crea el archivo de tipos src/types/marketplace.ts para el módulo de marketplace de integraciones. Debe incluir:
+- Tipos para integraciones disponibles (API, servicio)
+- Tipos para credenciales y configuración
+- Tipos para registros de uso (logs)
+- Tipos para planes y suscripción
+- Enums para estado de integración
+- Interfaces para configuración de cada integración
+

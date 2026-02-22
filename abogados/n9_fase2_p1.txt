@@ -1,0 +1,8 @@
+Añade a marketplaceService funciones para consultar registros públicos:
+- Consulta al Registro Civil (nacimientos, defunciones, matrimonios)
+- Consulta al Catastro (datos catastrales de inmuebles)
+- Consulta al Registro de la Propiedad
+- Datos mock para desarrollo
+
+Implementa las funciones de consulta.
+

@@ -1,0 +1,8 @@
+Añade al servicio boeService.ts la función detectarDerogaciones() para identificar normas que han sido derogadas por nuevas. Debe incluir:
+- Comparación de fechas de publicación
+- Detección de cláusulas de derogación en textos
+- Alerta automática cuando una norma usada en un expediente ha sido derogada
+- Historial de derogaciones por norma
+
+Notifica al usuario cuando detecta cambios relevantes.
+

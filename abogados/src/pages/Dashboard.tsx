@@ -5,6 +5,7 @@ import { useRole } from '@/hooks/useRole';
 import Sidebar from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { SearchModal } from '@/components/layout/SearchModal';
+import { PredictiveAnalytics } from '@/components/dashboard/PredictiveAnalytics';
 import type { UserRole } from '@/types/roles';
 
 // Importar dashboards por rol

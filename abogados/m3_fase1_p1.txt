@@ -1,0 +1,10 @@
+Crea el archivo de tipos src/types/legislacion.ts para el módulo de legislación BOE/CENDOJ. Debe incluir:
+- Tipos para leyes, reales decreto, órdenes ministeriales
+- Tipos para resoluciones, circulares, instrucciones
+- Tipos para jurisprudencia (sentencias TS, audiencias provinciales, etc.)
+- Enums para tipo de norma, ámbito, estado_vigencia
+- Interfaces para buscador de legislación con filtros
+- Interfaces para alertas legislativas
+
+Usa convenciones del proyecto (TypeScript, exports limpios).
+

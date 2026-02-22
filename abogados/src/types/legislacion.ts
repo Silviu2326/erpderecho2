@@ -8,6 +8,175 @@
  */
 
 // ============================================
+// TIPOS DE JURISPRUDENCIA
+// ============================================
+
+export type TipoResolucionJudicial =
+  | 'sentencia'
+  | 'auto'
+  | 'providencia'
+  | 'decreto'
+  | 'interlocutoria'
+  | 'decreto_letrado'
+  | 'diligencia';
+
+export type TipoTribunal =
+  | 'tribunal_supremo'
+  | 'audiencia_nacional'
+  | 'tribunal_superior_justicia'
+  | 'audiencia_provincial'
+  | 'juzgado_primera_instancia'
+  | 'juzgado_instruccion'
+  | 'juzgado_penal'
+  | 'juzgado_lo_penal'
+  | 'juzgado_social'
+  | 'juzgado_administrativo'
+  | 'juzgado_mercantil'
+  | 'tribunal_constitucional'
+  | 'tribunal_europeo'
+  | 'tribunal_derechos_humanos';
+
+export type TipoSala =
+  | 'sala_primera'        // Civil
+  | 'sala_segunda'       // Penal
+  | 'sala_tercera'       // Contencioso-Administrativo
+  | 'sala_cuarta'        // Social
+  | 'saga_quinta'        // Militar
+  | 'sala_general';
+
+export type TipoProcedimiento =
+  | 'ordinario'
+  | 'abreviado'
+  | 'verbal'
+  | 'monitorio'
+  | 'ejecutivo'
+  | 'concursal'
+  | 'penal'
+  | 'laboral'
+  | 'administrativo'
+  | 'contencioso'
+  | 'familia'
+  | 'menores'
+  | 'instruccion'
+  | 'apelacion'
+  | 'casacion'
+  | 'suplicacion';
+
+export type EstadoProceso =
+  | 'archivado'
+  | 'en_tramite'
+  | 'sentencia_firme'
+  | 'recurrido'
+  | 'ejecucion'
+  | 'suspenso';
+
+export type SentenciaTipoFallo =
+  | 'estimatorio_total'
+  | 'estimatorio_parcial'
+  | 'desestimatorio'
+  | 'sobreseimiento'
+  | 'absolucion'
+  | 'condena'
+  | 'no_ha_lugar'
+  | 'ha_lugar';
+
+export interface JurisprudenciaDetalle {
+  // Identificación
+  id: string;
+  tipo: TipoResolucionJudicial;
+  numeroResolucion: string;
+  annoResolucion: number;
+  numeroProcedimiento?: string;
+  
+  // Tribunal
+  tribunal: TribunalDetalle;
+  sala?: TipoSala;
+  seccion?: number;
+  ponente?: string;
+  
+  // Fechas
+  fechaResolucion: Date;
+  fechaNotificacion?: Date;
+  fechaPublicacion?: Date;
+  fechaFirmeza?: Date;
+  
+  // Partes
+  parteDemandante?: string;
+  parteDemandada?: string;
+  otrasPartes?: string[];
+  
+  // Contenido estructurado
+  antecedentesHechos?: string;
+  hechosProbados?: string;
+  fundamentosDerecho?: string;
+  fallo?: string;
+  jurisprudencia?: string;
+  
+  // Fallo
+  tipoFallo: SentenciaTipoFallo;
+  contenidoFallo?: string;
+  costas?: 'si' | 'no' | 'especial';
+  
+  // Referencias legales
+  normasAplicadas?: LegislacionRef[];
+  doctrina?: string[];
+  
+  // Precedentes
+  citas?: JurisprudenciaRef[];
+  citedBy?: JurisprudenciaRef[];
+  
+  // Recursos
+  recurso?: RecursoInfo;
+  
+  // Ejecutividad
+  firmeza?: 'firme' | 'recurrida' | 'ejecutoriada';
+  ejecutividad?: 'inmediata' | 'diferida' | 'condicionada';
+  
+  // Voto particular
+  votoParticular?: {
+    autor: string;
+    contenido: string;
+  };
+  
+  // Otros
+  palabrasClave?: string[];
+  observaciones?: string;
+}
+
+export interface TribunalDetalle {
+  tipo: TipoTribunal;
+  nombre: string;
+  nombreCorto?: string;
+  codigo?: string;
+  provincia?: string;
+  comunidadAutonoma?: string;
+  direccion?: string;
+  telefono?: string;
+}
+
+export const TRIBUNALES_ESPANA: Record<TipoTribunal, { nombre: string; abreviatura: string }> = {
+  tribunal_supremo: { nombre: 'Tribunal Supremo', abreviatura: 'TS' },
+  audiencia_nacional: { nombre: 'Audiencia Nacional', abreviatura: 'AN' },
+  tribunal_superior_justicia: { nombre: 'Tribunal Superior de Justicia', abreviatura: 'TSJ' },
+  audiencia_provincial: { nombre: 'Audiencia Provincial', abreviatura: 'AP' },
+  juzgado_primera_instancia: { nombre: 'Juzgado de Primera Instancia', abreviatura: 'JPI' },
+  juzgado_instruccion: { nombre: 'Juzgado de Instrucción', abreviatura: 'JI' },
+  juzgado_penal: { nombre: 'Juzgado de Penal', abreviatura: 'JP' },
+  juzgado_lo_penal: { nombre: 'Juzgado de lo Penal', abreviatura: 'JLP' },
+  juzgado_social: { nombre: 'Juzgado de lo Social', abreviatura: 'JS' },
+  juzgado_administrativo: { nombre: 'Juzgado de lo Contencioso-Administrativo', abreviatura: 'JCA' },
+  juzgado_mercantil: { nombre: 'Juzgado Mercantil', abreviatura: 'JM' },
+  tribunal_constitucional: { nombre: 'Tribunal Constitucional', abreviatura: 'TC' },
+  tribunal_europeo: { nombre: 'Tribunal de Justicia de la UE', abreviatura: 'TJUE' },
+  tribunal_derechos_humanos: { nombre: 'Tribunal Europeo de Derechos Humanos', abreviatura: 'TEDH' },
+};
+
+export function formatearResolucion(jur: JurisprudenciaDetalle): string {
+  const abrev = TRIBUNALES_ESPANA[jur.tribunal.tipo]?.abreviatura || jur.tribunal.tipo;
+  return `${abrev} ${jur.numeroResolucion}/${jur.annoResolucion}`;
+}
+
+// ============================================
 // TIPOS COMUNES
 // ============================================
 
@@ -21,6 +190,7 @@ export type TipoDocumento =
   | 'orden'
   | 'resolucion'
   | 'circular'
+  | 'instruccion'
   | 'convenio'
   | 'doctrina'
   | 'jurisprudencia'

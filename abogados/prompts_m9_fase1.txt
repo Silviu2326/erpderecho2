@@ -1,0 +1,2 @@
+Revisa el archivo src/services/lopdgdService.ts y expande el servicio para incluir las funciones del Registro de Actividades de Tratamiento (RAT) согласно el RGPD. Añade métodos para: CRUD de actividades de tratamiento, importar/exportar actividades desde/hacia JSON, validar que cada actividad tenga base legal y categorías de datos definidas, y generar un informe de cumplimiento para auditoría. Usa los tipos definidos en src/types/lopdgdd.ts que acabo de crear.
+

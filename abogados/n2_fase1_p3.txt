@@ -1,0 +1,9 @@
+Crea un hook usePrediccion.ts en src/hooks/ para acceder al servicio de predicción desde componentes React. Debe incluir:
+- Estado para predicciones cargadas
+- Funciones para obtener predicciones
+- Estado de carga y errores
+- Caché de predicciones
+- Integración con casos del bufete
+
+Usa prediccionService y tipos de prediccion.ts.
+

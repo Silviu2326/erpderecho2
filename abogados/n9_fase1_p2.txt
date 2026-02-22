@@ -1,0 +1,10 @@
+Crea un servicio marketplaceService.ts en src/services/ para gestionar el marketplace de integraciones. Debe incluir:
+- Listado de integraciones disponibles
+- Activar/desactivar integración
+- Gestión de credenciales
+- Métodos de conexión a APIs externas
+- Registro de uso de cada integración
+- Datos mock de integraciones (Registro Civil, Notarios, Catastro, etc.)
+
+Usa los tipos de src/types/marketplace.ts.
+

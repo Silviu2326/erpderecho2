@@ -1,0 +1,10 @@
+Crea un hook useLOPDGDD.ts en src/hooks/ que proporcione una interfaz React para el servicio lopdgdService. Debe incluir:
+- Estado y funciones para gestionar actividades de tratamiento (CRUD)
+- Función para validar actividades antes de guardar
+- Métodos para exportar/importar desde JSON
+- Generación de informes de cumplimiento
+- Manejo de errores y estados de carga
+- Persistencia básica en localStorage para las actividades
+
+Usa los tipos de src/types/lopdgdd.ts y lopdgdService.
+

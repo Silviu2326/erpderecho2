@@ -1,0 +1,10 @@
+Crea un componente ClausulaGenerator.tsx en src/components/lopdgdd/ para generar cláusulas de protección de datos. Debe incluir:
+- Selector de tipo de cláusula (cookies, privacidad, consentimiento, aviso legal, política de retención)
+- Editor visual con variables dinámicas (nombre empresa, contacto DPO, etc.)
+- Preview en tiempo real
+- Export a PDF o Word
+- Historial de cláusulas generadas
+- Plantillas predefinidas conformes RGPD
+
+Genera texto en español con cumplimiento LOPDGDD/RGPD.
+

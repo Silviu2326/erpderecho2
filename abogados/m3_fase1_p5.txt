@@ -1,0 +1,10 @@
+Crea un hook useLegislacion.ts en src/hooks/ que proporcione acceso al servicio de legislación. Debe incluir:
+- Funciones de búsqueda (búsqueda básica, búsqueda avanzada)
+- Estado para búsquedas recientes
+- Persistencia en localStorage de búsquedas favoritas
+- Funciones para gestionar alertas
+- Estado de carga y manejo de errores
+- Funciones de utilidad (formatear fecha, obtener URL del BOE)
+
+Usa boeService y tipos de legislacion.ts.
+

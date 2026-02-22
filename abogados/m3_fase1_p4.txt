@@ -1,0 +1,11 @@
+Crea un componente AlertaLegislativa.tsx en src/pages/legislacion/ para gestionar alertas de nueva legislación. Debe incluir:
+- Panel de alertas activas con estadísticas
+- Formulario para crear nueva alerta (palabras clave, tipos de norma, ámbitos)
+- Selector de frecuencia de notificación (diaria, semanal, mensual)
+- Historial de alertastriggeradas
+- Activar/desactivar alertas individualmente
+- Notificaciones visual (toast) cuando se detecta legislación nueva
+- Integración con el sistema de notificaciones existente
+
+Usa boeService para detectar nuevas normas.
+

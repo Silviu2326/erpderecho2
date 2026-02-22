@@ -1,0 +1,10 @@
+Crea un componente Marketplace.tsx en src/pages/admin/ para mostrar el marketplace de integraciones. Debe incluir:
+- Grid de integraciones disponibles
+- Cards con información de cada integración
+- Estado de conexión (conectado/desconectado)
+- Botón para conectar
+- Filtros por categoría
+- Buscador
+
+Usa useMarketplace hook.
+

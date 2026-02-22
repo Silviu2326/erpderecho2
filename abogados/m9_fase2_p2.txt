@@ -1,0 +1,10 @@
+Crea un componente DerechosARSULIPO.tsx en src/components/lopdgdd/ para gestionar los derechos de los interesados (Acceso, Rectificación, Supresión, Limitación, Portabilidad, Oposición). Debe incluir:
+- Panel con los 6 derechos ARCO/ARSULIPO explicados
+- Formulario para ejercer cada tipo de derecho
+- Seguimiento del estado de las solicitudes (pendiente, procesando, completado, rechazado)
+- Historial de solicitudes del usuario
+- Plantilla de respuesta para el responsable
+- Notificaciones al interesado sobre el progreso
+
+Usa los tipos DataSubjectRequest de lopdgdService.
+

@@ -57,7 +57,7 @@ for i in "${!prompts[@]}"; do
     
     # Ejecutar el prompt con opencode
     # Usamos heredoc para pasar el prompt
-    echo "$prompt" | npx opencode run -
+    echo "$prompt" | opencode run -
     
     echo ""
     echo "✅ Prompt $index completado"

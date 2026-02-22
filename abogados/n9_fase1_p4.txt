@@ -1,0 +1,10 @@
+Crea un componente APIKeys.tsx en src/pages/admin/ para gestionar las claves API del bufete. Debe incluir:
+- Listado de API keys activas
+- Crear nueva API key (nombre, permisos, fecha expiración)
+- Revocar API key
+- Ver última vez usada
+- Copiar key al portapapeles
+- Historial de uso
+
+Usa marketplaceService.
+

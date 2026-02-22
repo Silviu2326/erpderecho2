@@ -1,0 +1,9 @@
+Crea un componente ConsultaRapidaWidget.tsx en src/components/ para acceso rápido a consultas de registros. Debe incluir:
+- Selector de tipo de consulta (civil, catastro, propiedad)
+- Campo de búsqueda (DNI, NIR, referencia catastral)
+- Resultados en formato tarjeta
+- Acceso directo a detalle
+- Diseño compacto para sidebar
+
+Usa useConsultaRegistro hook.
+

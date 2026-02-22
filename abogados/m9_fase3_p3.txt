@@ -1,0 +1,11 @@
+Crea un componente Brechas.tsx en src/components/lopdgdd/ para gestionar brechas de seguridad. Debe incluir:
+- Registro de nuevas brechas (descripción, registros afectados, severidad)
+- Calculadora automática de riesgo según número de afectados y tipo de datos
+- Workflow de notificación a autoridad (72 horas)
+- Plantilla de notificación a afectados
+- Historial de brechas
+- Estadísticas de brechas por tipo/severidad
+- Checklist de acciones correctivas
+
+Usa DataBreach de lopdgdService.
+

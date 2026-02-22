@@ -1,0 +1,9 @@
+Crea el archivo de tipos src/types/integraciones.ts para el módulo de integraciones externas (Office 365, Google). Debe incluir:
+- Tipos para conexiones OAuth (estado, token, refresh)
+- Tipos para calendarios, eventos, disponibilidad
+- Tipos para emails, carpetas, adjuntos
+- Tipos para archivos Drive/Dropbox
+- Enums para estado de sincronización
+- Interfaces para configuración de integraciones
+- Tipos para logs y errores de integración
+

@@ -1,0 +1,10 @@
+Crea un componente CasosSimilares.tsx en src/components/prediccion/ para mostrar casos similares a uno dado. Debe incluir:
+- Lista de casos similares encontrados
+- Porcentaje de similitud
+- Resultado del caso similar
+- Enlace al expediente del caso similar
+- Filtros por tipo de caso, fecha
+- Diseño de tarjeta para cada caso
+
+Usa prediccionService.buscarCasosSimilares().
+

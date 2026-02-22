@@ -1,0 +1,11 @@
+Crea un componente BuscadorBOE.tsx en src/pages/legislacion/ para buscar legislación. Debe incluir:
+- Campo de búsqueda con autocompletado
+- Filtros avanzados: tipo de norma, fecha desde/hasta, ámbito
+- Resultados paginados con previsualización
+- Historial de búsquedas recientes
+- Guardar búsqueda favorita
+- Acceso directo a normas frecuentes
+- Diseño responsive siguiendo el estilo del proyecto
+
+Usa el servicio boeService y tipos de legislacion.ts.
+

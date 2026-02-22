@@ -1,0 +1,11 @@
+Crea un componente PoliticasRetencion.tsx en src/components/lopdgdd/ para gestionar políticas de retención de datos. Debe incluir:
+- Lista de políticas de retención existentes
+- Editor para crear/editar políticas (categoría, período, base legal)
+- Indicador visual de qué datos se eliminarán pronto
+- Simulación de eliminación automática
+- Histórico de eliminaciones realizadas
+- Alertas antes de que expire el período de retención
+- Export del registro de eliminaciones
+
+Usa RetentionPolicy de lopdgdService.
+

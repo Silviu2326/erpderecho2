@@ -1,0 +1,10 @@
+Crea un componente React src/components/lopdgdd/ActividadesTratamiento.tsx que muestre el Registro de Actividades de Tratamiento (RAT). El componente debe incluir:
+- Una tabla con todas las actividades de tratamiento
+- Filtros por base legal y categoría de datos
+- Modal para crear/editar actividades
+- Validación en tiempo real usando lopdgdService.validateActivity()
+- Estadísticas simples (total, por base legal, con transferencias)
+- Botón para exportar a JSON
+
+Usa los tipos de src/types/lopdgdd.ts y el servicio lopdgdService. Sigue el estilo de componentes existentes en el proyecto (usa Card, Button, Table, Modal de los componentes UI).
+

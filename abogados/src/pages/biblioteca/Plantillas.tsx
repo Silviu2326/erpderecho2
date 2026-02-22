@@ -68,7 +68,7 @@ export default function Plantillas() {
 
   // Filtrar y ordenar plantillas
   const filteredPlantillas = useMemo(() => {
-    let result = plantillasData.filter(p => {
+    const result = plantillasData.filter(p => {
       const matchesSearch = 
         p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||

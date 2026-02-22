@@ -1,0 +1,11 @@
+Crea un servicio prediccionService.ts en src/services/ para el análisis predictivo de casos legales. Debe incluir:
+- Función para predecir resultado de caso basado en casos similares
+- Función para calcular probabilidad de éxito
+- Función para identificar casos similares históricos
+- Función para estimar duración del caso
+- Función para calcular riesgo de prescripción
+- Datos mock para desarrollo
+- Caché de resultados
+
+Usa los tipos de src/types/prediccion.ts.
+

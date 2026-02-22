@@ -1,0 +1,8 @@
+Crea un hook useConsultaRegistro.ts en src/hooks/ para realizar consultas a registros públicos. Debe incluir:
+- Funciones para cada tipo de consulta (civil, catastro, propiedad)
+- Estado de carga y errores
+- Caché de resultados
+- Manejo de credenciales
+
+Usa marketplaceService.
+

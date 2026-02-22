@@ -1,0 +1,8 @@
+Crea un servicio exchangeRateService.ts en src/services/ para obtener tasas de cambio. Debe incluir:
+- Obtención de tasas desde API externa (o mock)
+- Actualización periódica de tasas
+- Caché en localStorage con fecha de actualización
+- Conversión entre cualquier par de monedas soportadas
+- Manejo de errores si API no disponible
+- Monedas soportadas: EUR, USD, GBP, CHF
+

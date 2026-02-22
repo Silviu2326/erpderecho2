@@ -1,0 +1,10 @@
+Añade al Dashboard.tsx una sección de análisis predictivo. Debe incluir:
+- Panel de predicciones activas
+- Gráficos de tendencia de resultados
+- Indicadores de riesgo por área
+- Casos con mayor probabilidad de éxito/fracaso
+- Métricas del modelo de predicción
+- Integración con componentes existentes
+
+Usa usePrediccion y prediccionService.
+

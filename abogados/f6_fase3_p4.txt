@@ -1,0 +1,11 @@
+Crea un hook useEmailIntegration.ts en src/hooks/ que proporcione una interfaz unificada para ambas integraciones de email. Debe incluir:
+- Estado de conexión de cuentas
+- Funciones para enviar email (detecta proveedor automáticamente)
+- Funciones para recibir emails
+- Funciones para gestionar carpetas
+- Adjuntar documentos desde el bufete
+- Manejo de errores unificado
+- Preferencias del usuario (cuenta por defecto, firma)
+
+Usa microsoftService y googleService.
+

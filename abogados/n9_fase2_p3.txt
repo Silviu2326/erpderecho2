@@ -1,0 +1,9 @@
+Crea un hook useMarketplace.ts en src/hooks/ para gestionar el marketplace desde la UI. Debe incluir:
+- Listado de integraciones disponibles
+- Estado de conexión de cada una
+- Activar/desactivar integraciones
+- Gestionar configuración
+- Estado de uso y límites
+
+Usa marketplaceService.
+

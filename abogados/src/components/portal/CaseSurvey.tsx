@@ -416,8 +416,8 @@ export function CaseSurvey({ isOpen, onClose, case: caseInfo, onSubmit }: CaseSu
           </div>
         </motion.div>
       </motion.div>
-   >
+    </AnimatePresence>
   );
 }
 
- </AnimatePresenceexport default CaseSurvey;
+export default CaseSurvey;

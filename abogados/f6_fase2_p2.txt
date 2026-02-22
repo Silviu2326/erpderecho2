@@ -1,0 +1,11 @@
+Crea un componente CalendarSyncStatus.tsx en src/components/integraciones/ para mostrar el estado de sincronización de calendarios. Debe incluir:
+- Indicador visual de estado (sincronizando, sincronizado, error)
+- Último momento de sincronización
+- Número de eventos sincronizados
+- Errores recientes si los hay
+- Botón para sincronización manual
+- Configuración de sincronización (frecuencia, dirección)
+- Desactivar sincronización para calendario específico
+
+Usa useCalendarSync hook.
+

@@ -1,0 +1,10 @@
+Crea un componente LanguageSelector.tsx en src/components/ui/ para seleccionar el idioma de la aplicación. Debe incluir:
+- Dropdown con idiomas disponibles (ES, EN)
+- Bandera o código de idioma visual
+- Cambio de idioma instantáneo sin recarga
+- Persistencia de la preferencia
+- Diseño accesible y responsive
+- Posibilidad de расширить a más idiomas (CA, EU)
+
+Usa el sistema i18n configurado.
+

@@ -1,0 +1,12 @@
+Crea el archivo de traducciones src/locales/en.json con todas las traducciones al inglés. Debe incluir:
+- Navegación (menú principal, sidebar)
+- Botones comunes (guardar, cancelar, editar, eliminar, buscar)
+- Formularios (labels, placeholders, validación)
+- Mensajes de error y éxito
+- Textos del dashboard
+- Textos de páginas principales (expedientes, clientes, facturación)
+- Textos de modales y diálogos
+- Fechas y formatos numéricos en locale inglés
+
+Traduce todo el contenido de es.json al inglés.
+

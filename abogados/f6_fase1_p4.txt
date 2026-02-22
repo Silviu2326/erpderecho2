@@ -1,0 +1,12 @@
+Crea un componente Integraciones.tsx en src/pages/integraciones/ para gestionar todas las integraciones externas. Debe incluir:
+- Panel de conexiones activas (Microsoft, Google)
+- Estado de cada integración (conectado/desconectado/error)
+- Botones para conectar/desconectar
+- Configuración de cada servicio
+- Historial de sincronización
+- Logs de errores
+- Indicadores de última sincronización exitosa
+- Diseño responsive siguiendo el estilo del proyecto
+
+Usa microsoftService y googleService.
+

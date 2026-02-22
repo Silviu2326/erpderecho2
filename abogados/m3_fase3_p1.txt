@@ -1,0 +1,8 @@
+Añade al servicio boeService.ts la función getNovedades() para obtener las nuevas normas publicadas desde una fecha. Debe incluir:
+- Parámetro de fecha desde (por defecto últimos 7 días)
+- Filtrado por tipo de norma
+- Notificación de nuevas normas que afectan al bufete (por palabras clave)
+- Integración con el sistema de alertas existente
+
+Usa el servicio de legislación existente.
+

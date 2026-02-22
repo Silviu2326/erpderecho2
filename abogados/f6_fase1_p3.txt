@@ -1,0 +1,12 @@
+Crea un servicio googleService.ts en src/services/ para integrar con Google Workspace (Gmail, Calendar, Drive). Debe incluir:
+- Autenticación OAuth 2.0 con Google API
+- Métodos para obtener, crear, actualizar eventos de calendario
+- Métodos para enviar y recibir emails (Gmail)
+- Métodos para subir/descargar archivos de Google Drive
+- Sincronización de contactos
+- Manejo de tokens y refresh automático
+- Caché de datos
+- Simulación si API no disponible
+
+Usa los tipos de src/types/integraciones.ts.
+

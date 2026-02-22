@@ -1,0 +1,12 @@
+Crea un servicio microsoftService.ts en src/services/ para integrar con Microsoft 365 (Outlook, Calendar, OneDrive). Debe incluir:
+- Autenticación OAuth 2.0 con Microsoft Graph
+- Métodos para obtener, crear, actualizar eventos de calendario
+- Métodos para enviar y recibir emails
+- Métodos para subir/descargar archivos de OneDrive
+- Sincronización de contactos
+- Manejo de tokens y refresh automático
+- Caché de datos
+- Simulación si API no disponible
+
+Usa los tipos de src/types/integraciones.ts.
+

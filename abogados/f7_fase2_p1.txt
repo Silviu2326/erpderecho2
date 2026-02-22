@@ -1,0 +1,9 @@
+Crea un hook useCurrency.ts en src/hooks/ para gestionar la moneda de la aplicación. Debe incluir:
+- Moneda por defecto (EUR)
+- Cambio de moneda (EUR, USD, GBP, CHF)
+- Formateo de importes según la moneda
+- Conversión entre monedas (usando tasas de cambio)
+- Persistencia de la preferencia en localStorage
+- Símbolo y código de moneda
+- decimals configurables por moneda
+

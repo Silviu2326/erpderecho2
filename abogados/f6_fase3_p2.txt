@@ -1,0 +1,8 @@
+Añade al microsoftService y googleService la función enviarEmail() para enviar emails desde las cuentas vinculadas. Debe incluir:
+- Envío a través de API de Microsoft Graph / Gmail API
+- Adjuntar archivos desde el sistema local
+- Plantillas de email predefinidas
+- Seguimiento de emails enviados (registro en logs)
+- Manejo de errores (quota, rate limit, permisos)
+- Confirmación de envío exitoso
+

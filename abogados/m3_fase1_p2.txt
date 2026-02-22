@@ -1,0 +1,9 @@
+Crea un servicio boeService.ts en src/services/ para consumir la API del BOE. Debe incluir:
+- Función para buscar normas por texto, tipo, fecha
+- Función para obtener detalle de una norma por ID
+- Función para obtener última legislación publicada (por fecha)
+- Caché en localStorage para evitar llamadas repetidas
+- Tipos usando los de src/types/legislacion.ts
+- Manejo de errores y estados de carga
+- Simulación de datos si la API no está disponible
+

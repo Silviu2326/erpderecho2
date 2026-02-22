@@ -1,0 +1,10 @@
+Crea un componente PrediccionWidget.tsx en src/components/prediccion/ para mostrar predicciones de casos. Debe incluir:
+- Indicador visual de predicción (barra de progreso, porcentaje)
+- Nivel de confianza
+- Descripción breve del análisis
+- Enlace a detalle completo
+- Estado de carga
+- Diseño compacto para embed en otras páginas
+
+Usa usePrediccion hook.
+

@@ -1,0 +1,6 @@
+Crea un componente RAT_ExportButton.tsx en src/components/lopdgdd/ que exporte el Registro de Actividades de Tratamiento a JSON. Debe:
+- Usar lopdgdService.exportActivitiesToJSON() para obtener los datos
+- Ofrecer descarga como archivo .json
+- Generar nombre de archivo con fecha (rat_YYYY-MM-DD.json)
+- Mostrar un toast de éxito/error tras la exportación
+
