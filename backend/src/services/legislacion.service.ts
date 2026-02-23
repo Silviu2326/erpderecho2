@@ -1,9 +1,14 @@
 import { prisma } from '../config/database';
 import { ServiceException, PaginationParams, PaginatedResult } from './base.types';
+import { boeService, BOEQueryParams } from './boe.service';
+import { cendojService, CENDOJQueryParams } from './cendoj.service';
 
 export interface QueryLegislacionParams extends PaginationParams {
   tipo?: string;
   search?: string;
+  fuente?: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
 }
 
 export interface CreateFavoritoInput {
@@ -24,6 +29,16 @@ export interface UpdateAlertaInput {
 
 export interface QueryAlertaParams extends PaginationParams {
   activa?: boolean;
+}
+
+export interface BusquedaExternaParams {
+  fuente: 'BOE' | 'CENDOJ' | 'TODAS';
+  query: string;
+  fechaDesde?: string;
+  fechaHasta?: string;
+  tipo?: string;
+  limit?: number;
+  sincronizar?: boolean;
 }
 
 const legislacionSelect = {
@@ -59,14 +74,19 @@ const alertaSelect = {
 };
 
 class LegislacionService {
+  // Búsqueda en base de datos local
   async findAll(params: QueryLegislacionParams): Promise<PaginatedResult<any>> {
-    const { page = 1, limit = 20, sort = 'fechaPublicacion', order = 'desc', tipo, search } = params;
+    const { page = 1, limit = 20, sort = 'fechaPublicacion', order = 'desc', tipo, search, fuente } = params;
     const skip = (page - 1) * limit;
 
     const where: any = {};
 
     if (tipo) {
       where.tipo = tipo;
+    }
+
+    if (fuente) {
+      where.fuente = fuente;
     }
 
     if (search) {
@@ -111,48 +131,194 @@ class LegislacionService {
     return legislacion;
   }
 
-  async searchBOE(query: string, tipo?: string): Promise<any[]> {
-    const where: any = {
-      fuente: 'BOE',
-      OR: [
-        { titulo: { contains: query, mode: 'insensitive' } },
-        { contenido: { contains: query, mode: 'insensitive' } },
-      ],
-    };
+  // Búsqueda externa en BOE y/o CENDOJ
+  async busquedaExterna(params: BusquedaExternaParams): Promise<{
+    boe?: any[];
+    cendoj?: { results: any[]; total: number };
+    mensaje?: string;
+  }> {
+    const resultados: any = {};
 
-    if (tipo) {
-      where.tipo = tipo;
+    try {
+      if (params.fuente === 'BOE' || params.fuente === 'TODAS') {
+        const boeParams: BOEQueryParams = {
+          q: params.query,
+          fechaDesde: params.fechaDesde,
+          fechaHasta: params.fechaHasta,
+          limit: params.limit || 10,
+        };
+
+        const boeResults = await boeService.search(boeParams);
+        resultados.boe = boeResults;
+
+        // Sincronizar con BD si se solicita
+        if (params.sincronizar) {
+          await boeService.syncWithDatabase(prisma, boeResults);
+        }
+      }
+    } catch (error) {
+      console.error('Error en búsqueda BOE:', error);
+      resultados.boeError = 'Error al consultar BOE';
     }
 
-    return prisma.legislacion.findMany({
-      where,
-      take: 20,
-      orderBy: { fechaPublicacion: 'desc' },
-      select: legislacionSelect,
-    });
-  }
+    try {
+      if (params.fuente === 'CENDOJ' || params.fuente === 'TODAS') {
+        const cendojParams: CENDOJQueryParams = {
+          q: params.query,
+          fechaDesde: params.fechaDesde,
+          fechaHasta: params.fechaHasta,
+          limit: params.limit || 10,
+        };
 
-  async searchCENDOJ(query: string, tipo?: string): Promise<any[]> {
-    const where: any = {
-      fuente: 'CENDOJ',
-      OR: [
-        { titulo: { contains: query, mode: 'insensitive' } },
-        { contenido: { contains: query, mode: 'insensitive' } },
-      ],
-    };
+        const cendojResults = await cendojService.search(cendojParams);
+        resultados.cendoj = cendojResults;
 
-    if (tipo) {
-      where.tipo = tipo;
+        // Sincronizar con BD si se solicita
+        if (params.sincronizar) {
+          await cendojService.syncWithDatabase(prisma, cendojResults.results);
+        }
+      }
+    } catch (error) {
+      console.error('Error en búsqueda CENDOJ:', error);
+      resultados.cendojError = 'Error al consultar CENDOJ';
     }
 
-    return prisma.legislacion.findMany({
-      where,
-      take: 20,
-      orderBy: { fechaPublicacion: 'desc' },
-      select: legislacionSelect,
-    });
+    if (!resultados.boe && !resultados.cendoj) {
+      throw new ServiceException('SEARCH_ERROR', 'No se pudieron obtener resultados de ninguna fuente', 503);
+    }
+
+    return resultados;
   }
 
+  // Búsqueda específica BOE
+  async searchBOE(query: string, sincronizar: boolean = false): Promise<any[]> {
+    try {
+      const results = await boeService.search({ q: query, limit: 20 });
+      
+      if (sincronizar) {
+        await boeService.syncWithDatabase(prisma, results);
+      }
+      
+      return results;
+    } catch (error) {
+      console.error('Error buscando BOE:', error);
+      // Fallback a BD local
+      return this.findAll({ search: query, fuente: 'BOE' }).then(r => r.data);
+    }
+  }
+
+  // Búsqueda específica CENDOJ
+  async searchCENDOJ(query: string, sincronizar: boolean = false): Promise<any> {
+    try {
+      const results = await cendojService.search({ q: query, limit: 10 });
+      
+      if (sincronizar) {
+        await cendojService.syncWithDatabase(prisma, results.results);
+      }
+      
+      return results;
+    } catch (error) {
+      console.error('Error buscando CENDOJ:', error);
+      // Fallback a BD local
+      const localResults = await this.findAll({ search: query, fuente: 'CENDOJ' });
+      return { results: localResults.data, total: localResults.meta.total };
+    }
+  }
+
+  // Obtener documento específico de BOE
+  async getBOEDocumento(id: string): Promise<any> {
+    try {
+      const documento = await boeService.getDocumento(id);
+      
+      // Guardar en BD local
+      await prisma.legislacion.upsert({
+        where: { id: documento.id },
+        update: {
+          titulo: documento.titulo,
+          tipo: documento.tipo,
+          url: documento.uri,
+          fechaPublicacion: new Date(documento.fecha),
+          fuente: 'BOE',
+          contenido: documento.textoCompleto || documento.extracto,
+        },
+        create: {
+          id: documento.id,
+          titulo: documento.titulo,
+          tipo: documento.tipo,
+          url: documento.uri,
+          fechaPublicacion: new Date(documento.fecha),
+          fuente: 'BOE',
+          contenido: documento.textoCompleto || documento.extracto,
+        },
+      });
+      
+      return documento;
+    } catch (error) {
+      console.error('Error obteniendo documento BOE:', error);
+      throw new ServiceException('BOE_ERROR', 'Error al obtener documento del BOE', 503);
+    }
+  }
+
+  // Obtener sentencia específica de CENDOJ
+  async getCENDOJSentencia(id: string): Promise<any> {
+    try {
+      const sentencia = await cendojService.getSentencia(id);
+      
+      // Guardar en BD local
+      await prisma.legislacion.upsert({
+        where: { id: sentencia.id },
+        update: {
+          titulo: sentencia.titulo,
+          tipo: sentencia.tipoResolucion,
+          url: sentencia.url,
+          fechaPublicacion: new Date(sentencia.fecha),
+          fuente: 'CENDOJ',
+          contenido: sentencia.extracto,
+        },
+        create: {
+          id: sentencia.id,
+          titulo: sentencia.titulo,
+          tipo: sentencia.tipoResolucion,
+          url: sentencia.url,
+          fechaPublicacion: new Date(sentencia.fecha),
+          fuente: 'CENDOJ',
+          contenido: sentencia.extracto,
+        },
+      });
+      
+      return sentencia;
+    } catch (error) {
+      console.error('Error obteniendo sentencia CENDOJ:', error);
+      throw new ServiceException('CENDOJ_ERROR', 'Error al obtener sentencia del CENDOJ', 503);
+    }
+  }
+
+  // Sincronización masiva
+  async sincronizarFuentesExternas(dias: number = 7): Promise<{
+    boe: number;
+    cendoj: number;
+    errores: string[];
+  }> {
+    const resultados = { boe: 0, cendoj: 0, errores: [] as string[] };
+    const fechaHasta = new Date().toISOString().split('T')[0];
+    const fechaDesde = new Date(Date.now() - dias * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    try {
+      // Sincronizar BOE
+      const boeResults = await boeService.searchByDateRange(fechaDesde, fechaHasta);
+      await boeService.syncWithDatabase(prisma, boeResults);
+      resultados.boe = boeResults.length;
+    } catch (error: any) {
+      resultados.errores.push(`BOE: ${error.message}`);
+    }
+
+    // Nota: CENDOJ no tiene búsqueda por rango, solo se sincroniza búsqueda específica
+    // Para sincronización masiva de CENDOJ se necesitaría iterar por términos de búsqueda
+
+    return resultados;
+  }
+
+  // Gestión de favoritos
   async getFavoritos(usuarioId: string, params: PaginationParams): Promise<PaginatedResult<any>> {
     const { page = 1, limit = 20 } = params;
     const skip = (page - 1) * limit;
@@ -222,6 +388,7 @@ class LegislacionService {
     });
   }
 
+  // Gestión de alertas
   async getAlertas(usuarioId: string, params: QueryAlertaParams): Promise<PaginatedResult<any>> {
     const { page = 1, limit = 20, activa } = params;
     const skip = (page - 1) * limit;
@@ -315,6 +482,47 @@ class LegislacionService {
     });
 
     return alerta;
+  }
+
+  // Verificar alertas y buscar nuevas publicaciones
+  async verificarAlertas(usuarioId: string): Promise<{
+    alertasVerificadas: number;
+    nuevosResultados: any[];
+  }> {
+    const alertas = await prisma.alerta.findMany({
+      where: { usuarioId, activa: true, deletedAt: null },
+    });
+
+    const nuevosResultados: any[] = [];
+
+    for (const alerta of alertas) {
+      try {
+        // Buscar en BOE
+        const boeResults = await boeService.search({
+          q: alerta.palabrasClave,
+          limit: 5,
+        });
+
+        // Buscar en CENDOJ
+        const cendojResults = await cendojService.search({
+          q: alerta.palabrasClave,
+          limit: 5,
+        });
+
+        nuevosResultados.push({
+          alerta: alerta.palabrasClave,
+          boe: boeResults,
+          cendoj: cendojResults.results,
+        });
+      } catch (error) {
+        console.error(`Error verificando alerta ${alerta.id}:`, error);
+      }
+    }
+
+    return {
+      alertasVerificadas: alertas.length,
+      nuevosResultados,
+    };
   }
 }
 

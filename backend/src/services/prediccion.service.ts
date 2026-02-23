@@ -1,6 +1,7 @@
 import { prisma } from '../config/database';
 import { ServiceException, PaginationParams, PaginatedResult } from './base.types';
 import { TipoPrediccionEnum } from '../dtos/prediccion.dto';
+import { aiService, AnalisisCasoInput } from './ai.service';
 
 export interface CreatePrediccionInput {
   expedienteId: string;
@@ -26,26 +27,84 @@ class PrediccionService {
   async create(usuarioId: string, input: CreatePrediccionInput): Promise<any> {
     const expediente = await prisma.expediente.findFirst({
       where: { id: input.expedienteId, deletedAt: null },
+      include: {
+        cliente: true,
+        actuaciones: {
+          orderBy: { fecha: 'desc' },
+          take: 5,
+        },
+      },
     });
 
     if (!expediente) {
       throw new ServiceException('EXPEDIENTE_NOT_FOUND', 'Expediente no encontrado', 404);
     }
 
+    let resultado: string;
+    let probabilidad: number;
+    let factoresAdicionales: any = {};
+
+    // Usar IA para generar predicción real
+    if (input.tipoPrediccion === TipoPrediccionEnum.RESULTADO || 
+        input.tipoPrediccion === TipoPrediccionEnum.EXITO) {
+      const analisisInput: AnalisisCasoInput = {
+        tipo: expediente.tipo,
+        descripcion: expediente.descripcion || 'Sin descripción detallada',
+        parteDemandante: expediente.cliente?.nombre,
+      };
+
+      const analisis = await aiService.analizarCaso(analisisInput);
+      
+      if (input.tipoPrediccion === TipoPrediccionEnum.RESULTADO) {
+        resultado = analisis.resultadoProbable;
+        factoresAdicionales = {
+          argumentosClave: analisis.argumentosClave,
+          jurisprudenciaRelevante: analisis.jurisprudenciaRelevante,
+          recomendaciones: analisis.recomendaciones,
+        };
+      } else {
+        resultado = `${analisis.probabilidadExito}%`;
+      }
+      probabilidad = analisis.probabilidadExito / 100;
+    } else if (input.tipoPrediccion === TipoPrediccionEnum.DURACION) {
+      const analisisInput: AnalisisCasoInput = {
+        tipo: expediente.tipo,
+        descripcion: expediente.descripcion || '',
+      };
+      const analisis = await aiService.analizarCaso(analisisInput);
+      resultado = analisis.duracionEstimada;
+      probabilidad = 0.75;
+    } else if (input.tipoPrediccion === TipoPrediccionEnum.COSTES) {
+      const analisisInput: AnalisisCasoInput = {
+        tipo: expediente.tipo,
+        descripcion: expediente.descripcion || '',
+      };
+      const analisis = await aiService.analizarCaso(analisisInput);
+      resultado = analisis.costesEstimados;
+      probabilidad = 0.70;
+    } else {
+      // Para otros tipos, usar mock simple
+      resultado = this.getMockPrediction(input.tipoPrediccion);
+      probabilidad = 0.65;
+    }
+
     const prediccion = await prisma.prediccion.create({
       data: {
-        usuarioId,
         expedienteId: input.expedienteId,
         tipoPrediccion: input.tipoPrediccion,
-        resultado: this.generateMockPrediction(input.tipoPrediccion),
-        confianza: Math.random() * 0.3 + 0.7,
+        resultado,
+        probabilidad,
+        factores: factoresAdicionales,
       } as any,
     });
 
-    return prediccion;
+    return {
+      ...prediccion,
+      factores: factoresAdicionales,
+    };
   }
 
-  private generateMockPrediction(tipo: TipoPrediccionEnum): string {
+  private getMockPrediction(tipo: TipoPrediccionEnum): string {
     const predictions: Record<TipoPrediccionEnum, string> = {
       [TipoPrediccionEnum.RESULTADO]: 'Favorable',
       [TipoPrediccionEnum.DURACION]: '6-12 meses',
@@ -54,6 +113,102 @@ class PrediccionService {
       [TipoPrediccionEnum.RIESGO_PRESCRIPCION]: 'Bajo',
     };
     return predictions[tipo] || 'Predicción no disponible';
+  }
+
+  async createAnalisisCompleto(usuarioId: string, expedienteId: string): Promise<any> {
+    const expediente = await prisma.expediente.findFirst({
+      where: { id: expedienteId, deletedAt: null },
+      include: {
+        cliente: true,
+        actuaciones: {
+          orderBy: { fecha: 'desc' },
+          take: 5,
+        },
+      },
+    });
+
+    if (!expediente) {
+      throw new ServiceException('EXPEDIENTE_NOT_FOUND', 'Expediente no encontrado', 404);
+    }
+
+    const analisisInput: AnalisisCasoInput = {
+      tipo: expediente.tipo,
+      descripcion: expediente.descripcion || 'Sin descripción detallada',
+      parteDemandante: expediente.cliente?.nombre,
+    };
+
+    // Generar análisis completo con IA
+    const [prediccionResultado, estrategia] = await Promise.all([
+      aiService.analizarCaso(analisisInput),
+      aiService.generarEstrategia(analisisInput),
+    ]);
+
+    // Crear múltiples predicciones
+    const predicciones = await prisma.$transaction([
+      prisma.prediccion.create({
+        data: {
+          expedienteId,
+          tipoPrediccion: TipoPrediccionEnum.RESULTADO,
+          resultado: prediccionResultado.resultadoProbable,
+          probabilidad: prediccionResultado.probabilidadExito / 100,
+          factores: {
+            argumentosClave: prediccionResultado.argumentosClave,
+            jurisprudenciaRelevante: prediccionResultado.jurisprudenciaRelevante,
+            recomendaciones: prediccionResultado.recomendaciones,
+          },
+        } as any,
+      }),
+      prisma.prediccion.create({
+        data: {
+          expedienteId,
+          tipoPrediccion: TipoPrediccionEnum.EXITO,
+          resultado: `${prediccionResultado.probabilidadExito}%`,
+          probabilidad: prediccionResultado.probabilidadExito / 100,
+        } as any,
+      }),
+      prisma.prediccion.create({
+        data: {
+          expedienteId,
+          tipoPrediccion: TipoPrediccionEnum.DURACION,
+          resultado: prediccionResultado.duracionEstimada,
+          probabilidad: 0.75,
+        } as any,
+      }),
+      prisma.prediccion.create({
+        data: {
+          expedienteId,
+          tipoPrediccion: TipoPrediccionEnum.COSTES,
+          resultado: prediccionResultado.costesEstimados,
+          probabilidad: 0.70,
+        } as any,
+      }),
+    ]);
+
+    return {
+      predicciones,
+      analisis: prediccionResultado,
+      estrategia,
+    };
+  }
+
+  async analizarSentimientoLead(leadId: string): Promise<any> {
+    const lead = await prisma.lead.findFirst({
+      where: { id: leadId, deletedAt: null },
+    });
+
+    if (!lead) {
+      throw new ServiceException('LEAD_NOT_FOUND', 'Lead no encontrado', 404);
+    }
+
+    const texto = `${lead.nombre} ${lead.origen || ''} ${lead.estado} ${lead.empresa || ''}`;
+      const analisis = await aiService.analizarSentimiento(texto);
+
+    return {
+      leadId,
+      sentimiento: analisis.sentimiento,
+      probabilidad: analisis.confianza,
+      factores: analisis.factores,
+    };
   }
 
   async findAll(params: QueryPrediccionParams): Promise<PaginatedResult<any>> {
@@ -81,7 +236,9 @@ class PrediccionService {
           expedienteId: true,
           tipoPrediccion: true,
           resultado: true,
+          probabilidad: true,
           createdAt: true,
+          factores: true,
           expediente: {
             select: {
               id: true,
@@ -137,12 +294,14 @@ class PrediccionService {
     const predicciones = await prisma.prediccion.findMany({
       where: { expedienteId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        tipoPrediccion: true,
-        resultado: true,
-        createdAt: true,
-      },
+        select: {
+          id: true,
+          tipoPrediccion: true,
+          resultado: true,
+          probabilidad: true,
+          createdAt: true,
+          factores: true,
+        },
     });
 
     return predicciones;
@@ -157,6 +316,7 @@ class PrediccionService {
       throw new ServiceException('EXPEDIENTE_NOT_FOUND', 'Expediente no encontrado', 404);
     }
 
+    // Buscar casos similares por tipo y características
     const casosSimilares = await prisma.expediente.findMany({
       where: {
         id: { not: input.expedienteId },
@@ -169,6 +329,7 @@ class PrediccionService {
         numeroExpediente: true,
         tipo: true,
         estado: true,
+        descripcion: true,
         cliente: {
           select: {
             id: true,
@@ -180,6 +341,7 @@ class PrediccionService {
           select: {
             tipoPrediccion: true,
             resultado: true,
+            probabilidad: true,
           },
         },
       },
@@ -204,34 +366,39 @@ class PrediccionService {
 
     const predicciones = await prisma.prediccion.findMany({
       where,
-      select: {
-        id: true,
-        tipoPrediccion: true,
-        resultado: true,
-        createdAt: true,
-      },
+        select: {
+          id: true,
+          tipoPrediccion: true,
+          resultado: true,
+          probabilidad: true,
+          createdAt: true,
+          factores: true,
+        },
     });
 
-    const tendencias = predicciones.reduce((acc: any, pred) => {
+    // Análisis de tendencias
+    const porTipo = predicciones.reduce((acc: any, pred) => {
       if (!acc[pred.tipoPrediccion]) {
         acc[pred.tipoPrediccion] = {
-          total: 0,
           count: 0,
+          probabilidadPromedio: 0,
         };
       }
-      acc[pred.tipoPrediccion].total += 1;
       acc[pred.tipoPrediccion].count += 1;
+      acc[pred.tipoPrediccion].probabilidadPromedio += pred.probabilidad || 0;
       return acc;
     }, {});
 
-    Object.keys(tendencias).forEach((key) => {
-      tendencias[key].total = tendencias[key].total;
+    // Calcular promedios
+    Object.keys(porTipo).forEach((key) => {
+      porTipo[key].probabilidadPromedio = 
+        Math.round((porTipo[key].probabilidadPromedio / porTipo[key].count) * 100) / 100;
     });
 
     return {
       periodo: `${meses} meses`,
       totalPredicciones: predicciones.length,
-      tendencias,
+      porTipo,
     };
   }
 
@@ -259,11 +426,19 @@ class PrediccionService {
 
     const porTipo = predicciones.reduce((acc: any, p) => {
       if (!acc[p.tipoPrediccion]) {
-        acc[p.tipoPrediccion] = 0;
+        acc[p.tipoPrediccion] = { count: 0, probabilidadTotal: 0 };
       }
-      acc[p.tipoPrediccion] += 1;
+      acc[p.tipoPrediccion].count += 1;
+      acc[p.tipoPrediccion].probabilidadTotal += p.probabilidad || 0;
       return acc;
     }, {});
+
+    // Calcular promedios
+    Object.keys(porTipo).forEach((key) => {
+      porTipo[key].probabilidadPromedio = 
+        Math.round((porTipo[key].probabilidadTotal / porTipo[key].count) * 100) / 100;
+      delete porTipo[key].probabilidadTotal;
+    });
 
     return {
       total,

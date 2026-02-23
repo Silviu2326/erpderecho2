@@ -15,12 +15,16 @@ import legislacionRoutes from './routes/legislacion';
 import integracionesRoutes from './routes/integraciones';
 import prediccionRoutes from './routes/prediccion';
 import { errorHandler } from './middleware/errorHandler';
+import { setupSwagger } from './config/swagger';
 
 const app: Application = express();
 
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+
+// Configurar Swagger
+setupSwagger(app);
 
 app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

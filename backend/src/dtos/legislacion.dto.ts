@@ -18,6 +18,14 @@ export class QueryLegislacionDto {
   @IsOptional()
   search?: string;
 
+  @IsString()
+  @IsOptional()
+  sort?: string = 'fechaPublicacion';
+
+  @IsString()
+  @IsOptional()
+  order?: 'asc' | 'desc' = 'desc';
+
   @IsNumber()
   @IsOptional()
   @Min(1)

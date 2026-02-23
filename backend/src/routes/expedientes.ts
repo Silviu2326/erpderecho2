@@ -21,6 +21,64 @@ function formatResponse<T>(data: T, meta?: any) {
   return response;
 }
 
+/**
+ * @swagger
+ * /expedientes:
+ *   get:
+ *     summary: Listar expedientes
+ *     tags: [Expedientes]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Número de página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: Resultados por página
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Búsqueda por número, descripción, cliente o abogado
+ *       - in: query
+ *         name: estado
+ *         schema:
+ *           type: string
+ *           enum: [ACTIVO, CERRADO, ARCHIVADO, SUSPENDIDO]
+ *         description: Filtrar por estado
+ *       - in: query
+ *         name: tipo
+ *         schema:
+ *           type: string
+ *           enum: [CIVIL, PENAL, LABORAL, CONTENCIOSO, MERCANTIL, FAMILIA, ADMINISTRATIVO]
+ *         description: Filtrar por tipo de expediente
+ *       - in: query
+ *         name: abogado_id
+ *         schema:
+ *           type: string
+ *         description: Filtrar por abogado asignado
+ *       - in: query
+ *         name: cliente_id
+ *         schema:
+ *           type: string
+ *         description: Filtrar por cliente
+ *     responses:
+ *       200:
+ *         description: Lista de expedientes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PaginatedResponse'
+ *       401:
+ *         description: No autorizado
+ */
 router.get('/', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const dto = plainToInstance(QueryExpedienteDto, req.query as any);

@@ -324,6 +324,10 @@ model Documento {
   ruta        String
   mimeType    String?   @map("mime_type")
   
+  // Campos para OCR
+  contenidoExtraido String?   @map("contenido_extraido") @db.Text
+  metadata    Json?
+  
   deletedAt   DateTime? @map("deleted_at")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
@@ -620,6 +624,7 @@ model Legislacion {
   url              String?
   fechaPublicacion DateTime? @map("fecha_publicacion")
   contenido        String?
+  fuente           String?   @default("LOCAL")
   
   deletedAt        DateTime? @map("deleted_at")
   createdAt        DateTime  @default(now()) @map("created_at")
@@ -629,6 +634,7 @@ model Legislacion {
   
   @@index([titulo], name: "idx_legislacion_titulo")
   @@index([tipo], name: "idx_legislacion_tipo")
+  @@index([fuente], name: "idx_legislacion_fuente")
   @@map("legislacion")
 }
 

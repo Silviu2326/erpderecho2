@@ -19,6 +19,70 @@ function formatResponse<T>(data: T) {
   return { success: true, data };
 }
 
+/**
+ * @swagger
+ * /auth/register:
+ *   post:
+ *     summary: Registrar un nuevo usuario
+ *     tags: [Autenticación]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - nombre
+ *               - apellido1
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: abogado@bufete.com
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: password123
+ *               nombre:
+ *                 type: string
+ *                 example: Juan
+ *               apellido1:
+ *                 type: string
+ *                 example: García
+ *               apellido2:
+ *                 type: string
+ *                 example: López
+ *               rol:
+ *                 type: string
+ *                 enum: [admin, abogado, letrado, secretary, becario, colaborador]
+ *                 example: abogado
+ *     responses:
+ *       201:
+ *         description: Usuario registrado exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *                     accessToken:
+ *                       type: string
+ *                     refreshToken:
+ *                       type: string
+ *       400:
+ *         description: Datos inválidos
+ *       409:
+ *         description: El usuario ya existe
+ */
+
 async function generateTokens(userId: string, email: string, rol: string) {
   const accessToken = jwt.sign(
     { id: userId, userId, email, rol, type: 'access' },
@@ -96,6 +160,51 @@ router.post('/register', async (req, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ * /auth/login:
+ *   post:
+ *     summary: Iniciar sesión
+ *     tags: [Autenticación]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: abogado@bufete.com
+ *               password:
+ *                 type: string
+ *                 example: password123
+ *     responses:
+ *       200:
+ *         description: Login exitoso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *                     accessToken:
+ *                       type: string
+ *                     refreshToken:
+ *                       type: string
+ *       401:
+ *         description: Credenciales inválidas
+ */
 router.post('/login', async (req, res: Response) => {
   try {
     const dto = plainToInstance(LoginDto, req.body);
@@ -204,6 +313,34 @@ router.post('/logout', authMiddleware, async (req: AuthRequest, res: Response) =
   }
 });
 
+/**
+ * @swagger
+ * /auth/me:
+ *   get:
+ *     summary: Obtener información del usuario autenticado
+ *     tags: [Autenticación]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Información del usuario
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ *       401:
+ *         description: No autorizado
+ *       404:
+ *         description: Usuario no encontrado
+ */
 router.get('/me', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const user = await prisma.user.findUnique({

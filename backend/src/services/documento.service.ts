@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { prisma } from '../config/database';
 import { ServiceException, PaginationParams, PaginatedResult } from './base.types';
+import { ocrService } from './ocr.service';
 
 export interface CreateDocumentoInput {
   nombre: string;
@@ -194,10 +195,70 @@ class DocumentoService {
       throw new ServiceException('FILE_NOT_FOUND', 'Archivo no encontrado en el servidor', 404);
     }
 
+    // Procesar OCR
+    const ocrResult = await ocrService.extractText(filePath);
+
+    // Analizar documento
+    const analysis = await ocrService.analyzeDocument(filePath);
+
+    // Actualizar documento con información extraída
+    await prisma.documento.update({
+      where: { id },
+      data: {
+        contenidoExtraido: ocrResult.fullText,
+        metadata: {
+          ocr: {
+            confidence: ocrResult.confidence,
+            pages: ocrResult.pages,
+            language: ocrResult.language,
+            entities: ocrResult.entities,
+          },
+          analysis: {
+            documentType: analysis.documentType,
+            summary: analysis.summary,
+            keyPoints: analysis.keyPoints,
+            suggestedTags: analysis.suggestedTags,
+          },
+        },
+      } as any,
+    });
+
     return {
-      message: 'OCR processing not implemented',
       documentoId: id,
+      ocr: ocrResult,
+      analysis,
+      message: 'OCR procesado correctamente',
     };
+  }
+
+  async batchOcr(documentoIds: string[]): Promise<{ results: any[]; failed: string[] }> {
+    const results: any[] = [];
+    const failed: string[] = [];
+
+    for (const id of documentoIds) {
+      try {
+        const result = await this.processOcr(id);
+        results.push(result);
+      } catch (error) {
+        console.error(`Error procesando OCR para documento ${id}:`, error);
+        failed.push(id);
+      }
+    }
+
+    return { results, failed };
+  }
+
+  async searchByContent(query: string, params: PaginationParams = {}): Promise<PaginatedResult<any>> {
+    const { page = 1, limit = 20 } = params;
+    
+    // Por ahora, búsqueda básica por nombre (requiere migración de DB para búsqueda en contenido)
+    const resultado = await this.findAll({
+      page,
+      limit,
+      search: query,
+    });
+
+    return resultado;
   }
 }
 

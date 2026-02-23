@@ -10,6 +10,11 @@ export interface EnvConfig {
   JWT_REFRESH_EXPIRES_IN: string;
   PORT: number;
   NODE_ENV: 'development' | 'production' | 'test';
+  OPENAI_API_KEY?: string;
+  OPENAI_MODEL: string;
+  GOOGLE_CLOUD_PROJECT_ID?: string;
+  GOOGLE_CLOUD_KEY_FILE?: string;
+  GOOGLE_CLOUD_API_KEY?: string;
 }
 
 function getEnv(key: string, defaultValue?: string): string {
@@ -41,4 +46,9 @@ export const env: EnvConfig = {
   JWT_REFRESH_EXPIRES_IN: getEnv('JWT_REFRESH_EXPIRES_IN', '7d'),
   PORT: getEnvNumber('PORT', 3000),
   NODE_ENV: getEnv('NODE_ENV', 'development') as EnvConfig['NODE_ENV'],
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  OPENAI_MODEL: getEnv('OPENAI_MODEL', 'gpt-3.5-turbo'),
+  GOOGLE_CLOUD_PROJECT_ID: process.env.GOOGLE_CLOUD_PROJECT_ID,
+  GOOGLE_CLOUD_KEY_FILE: process.env.GOOGLE_CLOUD_KEY_FILE,
+  GOOGLE_CLOUD_API_KEY: process.env.GOOGLE_CLOUD_API_KEY,
 };

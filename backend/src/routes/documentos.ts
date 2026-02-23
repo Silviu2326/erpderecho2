@@ -1,8 +1,8 @@
 import { Router, Response } from 'express';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
-import { prisma } from '../config/database';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { documentoService } from '../services/documento.service';
 import {
   CreateDocumentoDto,
   UpdateDocumentoDto,
@@ -21,6 +21,7 @@ function formatResponse<T>(data: T, meta?: any) {
   return response;
 }
 
+// Listar documentos
 router.get('/', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const dto = plainToInstance(QueryDocumentoDto, req.query as any);
@@ -30,68 +31,30 @@ router.get('/', authMiddleware, async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const { page = 1, limit = 20, sort = 'createdAt', order = 'desc', search, expediente_id, tipo } = dto;
-    const skip = (page - 1) * limit;
+    const resultado = await documentoService.findAll({
+      page: dto.page || 1,
+      limit: dto.limit || 20,
+      sort: dto.sort || 'createdAt',
+      order: dto.order || 'desc',
+      search: dto.search,
+      expediente_id: dto.expediente_id,
+      tipo: dto.tipo,
+    });
 
-    const where: any = {
-      deletedAt: null,
-    };
-
-    if (expediente_id) {
-      where.expedienteId = expediente_id;
-    }
-
-    if (tipo) {
-      where.tipo = tipo;
-    }
-
-    if (search) {
-      where.OR = [
-        { nombre: { contains: search, mode: 'insensitive' } },
-        { tipo: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    const [documentos, total] = await Promise.all([
-      prisma.documento.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { [sort]: order },
-        select: {
-          id: true,
-          nombre: true,
-          tipo: true,
-          tamano: true,
-          ruta: true,
-          mimeType: true,
-          expedienteId: true,
-          usuarioId: true,
-          createdAt: true,
-          updatedAt: true,
-          expediente: {
-            select: {
-              id: true,
-              numeroExpediente: true,
-            },
-          },
-        },
-      }),
-      prisma.documento.count({ where }),
-    ]);
-
-    res.json(formatResponse(documentos, {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    }));
-  } catch (error) {
+    res.json(formatResponse(resultado.data, resultado.meta));
+  } catch (error: any) {
     console.error('List documentos error:', error);
-    res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+    res.status(error.statusCode || 500).json({ 
+      success: false, 
+      error: { 
+        code: error.code || 'INTERNAL_ERROR', 
+        message: error.message || 'Internal server error' 
+      } 
+    });
   }
 });
 
+// Crear documento
 router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const dto = plainToInstance(CreateDocumentoDto, req.body);
@@ -101,56 +64,42 @@ router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const documento = await prisma.documento.create({
-      data: {
-        ...dto,
-        usuarioId: req.user?.id,
-      },
-    });
+    const documento = await documentoService.create(dto, req.user!.id);
 
     res.status(201).json(formatResponse(documento));
-  } catch (error) {
+  } catch (error: any) {
     console.error('Create documento error:', error);
-    res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+    res.status(error.statusCode || 500).json({ 
+      success: false, 
+      error: { 
+        code: error.code || 'INTERNAL_ERROR', 
+        message: error.message || 'Internal server error' 
+      } 
+    });
   }
 });
 
+// Obtener documento por ID
 router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    const documento = await prisma.documento.findFirst({
-      where: { id, deletedAt: null },
-      include: {
-        expediente: {
-          select: {
-            id: true,
-            numeroExpediente: true,
-            tipo: true,
-          },
-        },
-        usuario: {
-          select: {
-            id: true,
-            nombre: true,
-            apellido1: true,
-          },
-        },
-      },
-    });
-
-    if (!documento) {
-      res.status(404).json({ success: false, error: { code: 'DOCUMENTO_NOT_FOUND', message: 'Documento no encontrado' } });
-      return;
-    }
+    const documento = await documentoService.findById(id);
 
     res.json(formatResponse(documento));
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get documento error:', error);
-    res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+    res.status(error.statusCode || 500).json({ 
+      success: false, 
+      error: { 
+        code: error.code || 'INTERNAL_ERROR', 
+        message: error.message || 'Internal server error' 
+      } 
+    });
   }
 });
 
+// Actualizar documento
 router.put('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -161,111 +110,142 @@ router.put('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
       return;
     }
 
-    const existingDocumento = await prisma.documento.findFirst({
-      where: { id, deletedAt: null },
-    });
-
-    if (!existingDocumento) {
-      res.status(404).json({ success: false, error: { code: 'DOCUMENTO_NOT_FOUND', message: 'Documento no encontrado' } });
-      return;
-    }
-
-    const documento = await prisma.documento.update({
-      where: { id },
-      data: dto,
-    });
+    const documento = await documentoService.update(id, dto);
 
     res.json(formatResponse(documento));
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update documento error:', error);
-    res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+    res.status(error.statusCode || 500).json({ 
+      success: false, 
+      error: { 
+        code: error.code || 'INTERNAL_ERROR', 
+        message: error.message || 'Internal server error' 
+      } 
+    });
   }
 });
 
+// Eliminar documento
 router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    const existingDocumento = await prisma.documento.findFirst({
-      where: { id, deletedAt: null },
-    });
-
-    if (!existingDocumento) {
-      res.status(404).json({ success: false, error: { code: 'DOCUMENTO_NOT_FOUND', message: 'Documento no encontrado' } });
-      return;
-    }
-
-    await prisma.documento.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+    await documentoService.delete(id);
 
     res.json(formatResponse({ message: 'Documento eliminado correctamente' }));
-  } catch (error) {
+  } catch (error: any) {
     console.error('Delete documento error:', error);
-    res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+    res.status(error.statusCode || 500).json({ 
+      success: false, 
+      error: { 
+        code: error.code || 'INTERNAL_ERROR', 
+        message: error.message || 'Internal server error' 
+      } 
+    });
   }
 });
 
+// Descargar documento
 router.get('/:id/descargar', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
 
-    const documento = await prisma.documento.findFirst({
-      where: { id, deletedAt: null },
-    });
+    const { filePath, fileName } = await documentoService.download(id);
 
-    if (!documento) {
-      res.status(404).json({ success: false, error: { code: 'DOCUMENTO_NOT_FOUND', message: 'Documento no encontrado' } });
-      return;
-    }
-
-    const filePath = path.resolve(documento.ruta);
-
-    if (!fs.existsSync(filePath)) {
-      res.status(404).json({ success: false, error: { code: 'FILE_NOT_FOUND', message: 'Archivo no encontrado en el servidor' } });
-      return;
-    }
-
-    res.download(filePath, documento.nombre);
-  } catch (error) {
+    res.download(filePath, fileName);
+  } catch (error: any) {
     console.error('Download documento error:', error);
-    res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+    res.status(error.statusCode || 500).json({ 
+      success: false, 
+      error: { 
+        code: error.code || 'INTERNAL_ERROR', 
+        message: error.message || 'Internal server error' 
+      } 
+    });
   }
 });
 
-router.post('/ocr', authMiddleware, async (req: AuthRequest, res: Response) => {
+// Procesar OCR de un documento
+router.post('/:id/ocr', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
-    const { documentoId } = req.body;
+    const { id } = req.params;
 
-    if (!documentoId) {
-      res.status(400).json({ success: false, error: { message: 'documentoId es requerido' } });
-      return;
-    }
+    const resultado = await documentoService.processOcr(id);
 
-    const documento = await prisma.documento.findFirst({
-      where: { id: documentoId, deletedAt: null },
+    res.json(formatResponse(resultado));
+  } catch (error: any) {
+    console.error('OCR documento error:', error);
+    res.status(error.statusCode || 500).json({ 
+      success: false, 
+      error: { 
+        code: error.code || 'INTERNAL_ERROR', 
+        message: error.message || 'Internal server error' 
+      } 
     });
+  }
+});
 
-    if (!documento) {
-      res.status(404).json({ success: false, error: { code: 'DOCUMENTO_NOT_FOUND', message: 'Documento no encontrado' } });
+// Procesar OCR en batch
+router.post('/ocr/batch', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { documentoIds } = req.body;
+
+    if (!documentoIds || !Array.isArray(documentoIds) || documentoIds.length === 0) {
+      res.status(400).json({ 
+        success: false, 
+        error: { message: 'documentoIds es requerido y debe ser un array' } 
+      });
       return;
     }
 
-    const filePath = path.resolve(documento.ruta);
-
-    if (!fs.existsSync(filePath)) {
-      res.status(404).json({ success: false, error: { code: 'FILE_NOT_FOUND', message: 'Archivo no encontrado en el servidor' } });
-      return;
-    }
+    const resultado = await documentoService.batchOcr(documentoIds);
 
     res.json(formatResponse({
-      message: 'OCR processing not implemented',
-      documentoId,
+      procesados: resultado.results.length,
+      fallidos: resultado.failed.length,
+      idsFallidos: resultado.failed,
+      message: `Procesados ${resultado.results.length} documentos, ${resultado.failed.length} fallidos`,
     }));
-  } catch (error) {
-    console.error('OCR documento error:', error);
-    res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+  } catch (error: any) {
+    console.error('OCR batch error:', error);
+    res.status(error.statusCode || 500).json({ 
+      success: false, 
+      error: { 
+        code: error.code || 'INTERNAL_ERROR', 
+        message: error.message || 'Internal server error' 
+      } 
+    });
+  }
+});
+
+// Buscar en contenido de documentos
+router.get('/search/contenido', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const { q, page, limit } = req.query;
+
+    if (!q || typeof q !== 'string') {
+      res.status(400).json({ 
+        success: false, 
+        error: { message: 'Parámetro q (query) es requerido' } 
+      });
+      return;
+    }
+
+    const resultado = await documentoService.searchByContent(q, {
+      page: page ? parseInt(page as string) : 1,
+      limit: limit ? parseInt(limit as string) : 20,
+    });
+
+    res.json(formatResponse(resultado.data, resultado.meta));
+  } catch (error: any) {
+    console.error('Search documentos error:', error);
+    res.status(error.statusCode || 500).json({ 
+      success: false, 
+      error: { 
+        code: error.code || 'INTERNAL_ERROR', 
+        message: error.message || 'Internal server error' 
+      } 
+    });
   }
 });
 
