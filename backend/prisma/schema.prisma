@@ -1,0 +1,721 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UsuarioRol {
+  admin
+  abogado
+  letrado
+  secretary
+  becario
+  colaborador
+}
+
+enum TipoExpediente {
+  CIVIL
+  PENAL
+  LABORAL
+  CONTENCIOSO
+  MERCANTIL
+  FAMILIA
+  ADMINISTRATIVO
+}
+
+enum EstadoExpediente {
+  ACTIVO
+  CERRADO
+  ARCHIVADO
+  SUSPENDIDO
+}
+
+enum EstadoFactura {
+  PENDIENTE
+  PAGADA
+  VENCIDA
+  ANULADA
+}
+
+enum TipoEvento {
+  AUDIENCIA
+  PLAZO
+  TAREA
+  CITACION
+  NOTIFICACION
+  OTRO
+}
+
+enum EstadoTurno {
+  PENDIENTE
+  ATENDIENDO
+  ATENDIDO
+  CANCELADO
+}
+
+enum TipoTurno {
+  CONSULTA
+  GESTION
+  URGENCIA
+}
+
+enum TipoGuardia {
+  PRESENCIAL
+  TELEFONICA
+  MIXTA
+}
+
+enum EstadoLiquidacion {
+  PENDIENTE
+  PAGADA
+  ANULADA
+}
+
+enum EstadoLead {
+  NUEVO
+  CONTACTADO
+  CUALIFICADO
+  CONVERTIDO
+  PERDIDO
+}
+
+enum EstadoOportunidad {
+  NUEVA
+  EN_PROCESO
+  GANADA
+  PERDIDA
+}
+
+enum EtapaOportunidad {
+  PROSPECTO
+  CALIFICACION
+  PROPUESTA
+  NEGOCIACION
+  CIERRE
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String    @map("password_hash")
+  nombre        String
+  apellido1     String?
+  apellido2     String?
+  rol           UsuarioRol @default(abogado)
+  especialidad  String?
+  numeroColegiado String?  @map("numero_colegiado")
+  telefono      String?
+  avatarUrl     String?   @map("avatar_url")
+  idioma        String    @default("es")
+  moneda        String    @default("EUR")
+  
+  activo        Boolean   @default(true)
+  ultimoAcceso  DateTime? @map("ultimo_acceso")
+  
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+  
+  version       Int       @default(1)
+  
+  refreshTokens RefreshToken[]
+  
+  expedientes   Expediente[]
+  actuaciones   Actuacion[]
+  facturas      Factura[]
+  documentos    Documento[]
+  eventos       Evento[]
+  turnos        Turno[]
+  guardias      Guardia[]
+  leads         Lead[]
+  oportunidades Oportunidad[]
+  actividades   Actividad[]
+  notas         Nota[]
+  favoritos     Favorito[]
+  alertas       Alerta[]
+  integraciones Integracion[]
+
+  @@index([email], name: "idx_usuario_email")
+  @@index([rol], name: "idx_usuario_rol")
+  @@index([activo], name: "idx_usuario_activo")
+  @@map("usuario")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId], name: "idx_refresh_token_user")
+  @@index([expiresAt], name: "idx_refresh_token_expires")
+  @@map("refresh_token")
+}
+
+model Cliente {
+  id             String    @id @default(uuid())
+  nombre         String
+  cif            String?   @unique
+  email          String?
+  telefono       String?
+  direccion      String?
+  codigoPostal   String?   @map("codigo_postal")
+  ciudad         String?
+  provincia      String?
+  pais           String?
+  observaciones  String?
+  
+  deletedAt      DateTime? @map("deleted_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  version        Int       @default(1)
+  
+  contactos      Contacto[]
+  expedientes    Expediente[]
+  facturas       Factura[]
+  leads          Lead[]
+  notas          Nota[]
+  consents       Consentimiento[]
+  derechos       DerechoARCO[]
+  
+  @@index([nombre], name: "idx_cliente_nombre")
+  @@index([cif], name: "idx_cliente_cif")
+  @@index([deletedAt], name: "idx_cliente_deleted")
+  @@map("cliente")
+}
+
+model Contacto {
+  id        String   @id @default(uuid())
+  nombre    String
+  email     String?
+  telefono  String?
+  cargo     String?
+  
+  clienteId String   @map("cliente_id")
+  cliente   Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  @@index([clienteId], name: "idx_contacto_cliente")
+  @@map("contacto")
+}
+
+model Expediente {
+  id              String          @id @default(uuid())
+  numeroExpediente String          @unique @map("numero_expediente")
+  tipo            TipoExpediente
+  estado          EstadoExpediente @default(ACTIVO)
+  descripcion     String?
+  
+  deletedAt      DateTime?       @map("deleted_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  version        Int             @default(1)
+  
+  clienteId      String?         @map("cliente_id")
+  cliente        Cliente?         @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  
+  abogadoId      String?         @map("abogado_id")
+  abogado        User?           @relation(fields: [abogadoId], references: [id], onDelete: SetNull)
+  
+  actuaciones    Actuacion[]
+  facturas       Factura[]
+  documentos     Documento[]
+  eventos        Evento[]
+  predicciones   Prediccion[]
+  
+  @@index([numeroExpediente], name: "idx_expediente_numero")
+  @@index([clienteId], name: "idx_expediente_cliente")
+  @@index([abogadoId], name: "idx_expediente_abogado")
+  @@index([tipo], name: "idx_expediente_tipo")
+  @@index([estado], name: "idx_expediente_estado")
+  @@map("expediente")
+}
+
+model Actuacion {
+  id          String    @id @default(uuid())
+  tipo        String
+  descripcion String?
+  fecha       DateTime
+  
+  documento   String?
+  
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  expedienteId String   @map("expediente_id")
+  expediente   Expediente @relation(fields: [expedienteId], references: [id], onDelete: Cascade)
+  
+  usuarioId   String    @map("usuario_id")
+  usuario     User      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  @@index([expedienteId], name: "idx_actuacion_expediente")
+  @@index([usuarioId], name: "idx_actuacion_usuario")
+  @@index([fecha], name: "idx_actuacion_fecha")
+  @@map("actuacion")
+}
+
+model Factura {
+  id              String        @id @default(uuid())
+  numero          String        @unique
+  concepto        String
+  importe         Float
+  importeBase     Float?        @map("importe_base")
+  importeIVA      Float?        @map("importe_iva")
+  estado          EstadoFactura @default(PENDIENTE)
+  fechaEmision    DateTime?     @map("fecha_emision")
+  fechaVencimiento DateTime?    @map("fecha_vencimiento")
+  
+  deletedAt      DateTime?     @map("deleted_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  version        Int           @default(1)
+  
+  clienteId      String?       @map("cliente_id")
+  cliente        Cliente?      @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  
+  expedienteId   String?       @map("expediente_id")
+  expediente     Expediente?   @relation(fields: [expedienteId], references: [id], onDelete: SetNull)
+  
+  usuarioId      String?       @map("usuario_id")
+  usuario        User?         @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  
+  lineas         LineaFactura[]
+  
+  @@index([numero], name: "idx_factura_numero")
+  @@index([clienteId], name: "idx_factura_cliente")
+  @@index([estado], name: "idx_factura_estado")
+  @@index([fechaVencimiento], name: "idx_factura_vencimiento")
+  @@map("factura")
+}
+
+model LineaFactura {
+  id              String    @id @default(uuid())
+  concepto        String
+  cantidad        Float
+  precioUnitario  Float     @map("precio_unitario")
+  importe         Float
+  
+  deletedAt      DateTime? @map("deleted_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  
+  facturaId       String    @map("factura_id")
+  factura         Factura  @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+  
+  @@index([facturaId], name: "idx_linea_factura_factura")
+  @@map("linea_factura")
+}
+
+model Documento {
+  id          String    @id @default(uuid())
+  nombre      String
+  tipo        String?
+  tamano      Int?      @map("tamano")
+  ruta        String
+  mimeType    String?   @map("mime_type")
+  
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  
+  expedienteId String?  @map("expediente_id")
+  expediente   Expediente? @relation(fields: [expedienteId], references: [id], onDelete: SetNull)
+  
+  usuarioId   String?   @map("usuario_id")
+  usuario     User?      @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  
+  @@index([expedienteId], name: "idx_documento_expediente")
+  @@index([usuarioId], name: "idx_documento_usuario")
+  @@map("documento")
+}
+
+model Evento {
+  id            String      @id @default(uuid())
+  titulo        String
+  descripcion   String?
+  fechaInicio   DateTime    @map("fecha_inicio")
+  fechaFin      DateTime?   @map("fecha_fin")
+  tipo          TipoEvento  @default(OTRO)
+
+  deletedAt     DateTime?   @map("deleted_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  expedienteId  String?     @map("expediente_id")
+  expediente    Expediente? @relation(fields: [expedienteId], references: [id], onDelete: SetNull)
+
+  usuarioId     String?     @map("usuario_id")
+  usuario       User?       @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([expedienteId], name: "idx_evento_expediente")
+  @@index([usuarioId], name: "idx_evento_usuario")
+  @@index([fechaInicio], name: "idx_evento_fecha_inicio")
+  @@index([tipo], name: "idx_evento_tipo")
+  @@map("evento")
+}
+
+model Turno {
+  id        String       @id @default(uuid())
+  fecha     DateTime
+  estado    EstadoTurno @default(PENDIENTE)
+  tipo      TipoTurno
+  centro    String?
+
+  deletedAt DateTime?   @map("deleted_at")
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  usuarioId String       @map("usuario_id")
+  usuario   User         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  liquidaciones Liquidacion[]
+
+  @@index([usuarioId], name: "idx_turno_usuario")
+  @@index([fecha], name: "idx_turno_fecha")
+  @@index([estado], name: "idx_turno_estado")
+  @@map("turno")
+}
+
+model Guardia {
+  id          String       @id @default(uuid())
+  fechaInicio  DateTime     @map("fecha_inicio")
+  fechaFin     DateTime     @map("fecha_fin")
+  tipo         TipoGuardia
+  centro       String?
+
+  deletedAt   DateTime?    @map("deleted_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  usuarioId   String       @map("usuario_id")
+  usuario     User         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId], name: "idx_guardia_usuario")
+  @@index([fechaInicio], name: "idx_guardia_fecha_inicio")
+  @@index([tipo], name: "idx_guardia_tipo")
+  @@map("guardia")
+}
+
+model Liquidacion {
+  id              String           @id @default(uuid())
+  importe         Float
+  estado          EstadoLiquidacion @default(PENDIENTE)
+  fechaLiquidacion DateTime?       @map("fecha_liquidacion")
+
+  deletedAt       DateTime?        @map("deleted_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  turnoId         String           @map("turno_id")
+  turno           Turno            @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+
+  @@index([turnoId], name: "idx_liquidacion_turno")
+  @@index([estado], name: "idx_liquidacion_estado")
+  @@map("liquidacion")
+}
+
+model Lead {
+  id             String      @id @default(uuid())
+  nombre         String
+  email          String?
+  telefono       String?
+  empresa        String?
+  origen         String?
+  estado         EstadoLead  @default(NUEVO)
+  probabilidad   Int         @default(0)
+  expectedRevenue Float?     @map("expected_revenue")
+  
+  deletedAt      DateTime?   @map("deleted_at")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+  
+  clienteId      String?     @map("cliente_id")
+  cliente        Cliente?    @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+  
+  usuarioId      String?     @map("usuario_id")
+  usuario        User?       @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  
+  oportunidades  Oportunidad[]
+  
+  @@index([estado], name: "idx_lead_estado")
+  @@index([clienteId], name: "idx_lead_cliente")
+  @@map("lead")
+}
+
+model Oportunidad {
+  id           String             @id @default(uuid())
+  titulo       String
+  estado       EstadoOportunidad  @default(NUEVA)
+  probabilidad Int                 @default(0)
+  importe      Float               @default(0)
+  etapa        EtapaOportunidad   @default(PROSPECTO)
+  
+  deletedAt    DateTime?          @map("deleted_at")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+  
+  leadId       String?            @map("lead_id")
+  lead         Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  
+  usuarioId    String?             @map("usuario_id")
+  usuario      User?               @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  
+  actividades  Actividad[]
+  notas        Nota[]
+  
+  @@index([leadId], name: "idx_oportunidad_lead")
+  @@index([usuarioId], name: "idx_oportunidad_usuario")
+  @@index([etapa], name: "idx_oportunidad_etapa")
+  @@map("oportunidad")
+}
+
+enum TipoActividad {
+  LLAMADA
+  EMAIL
+  REUNION
+  TAREA
+  NOTA
+}
+
+model Actividad {
+  id           String         @id @default(uuid())
+  tipo         TipoActividad
+  descripcion  String?
+  fecha        DateTime
+  completada   Boolean        @default(false)
+  
+  deletedAt    DateTime?      @map("deleted_at")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  
+  oportunidadId String?       @map("oportunidad_id")
+  oportunidad   Oportunidad?  @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
+  
+  usuarioId    String?        @map("usuario_id")
+  usuario      User?          @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  
+  @@index([oportunidadId], name: "idx_actividad_oportunidad")
+  @@index([usuarioId], name: "idx_actividad_usuario")
+  @@index([fecha], name: "idx_actividad_fecha")
+  @@map("actividad")
+}
+
+enum TipoDerechoARCO {
+  ACCESO
+  RECTIFICACION
+  SUPRESION
+  OPOSICION
+  PORTABILIDAD
+  LIMITACION
+}
+
+enum EstadoDerechoARCO {
+  PENDIENTE
+  EN_PROCESO
+  COMPLETADO
+  RECHAZADO
+}
+
+enum EstadoBrecha {
+  DETECTADA
+  INVESTIGANDO
+  CONTENIDA
+  NOTIFICADA
+  CERRADA
+}
+
+model Consentimiento {
+  id                 String    @id @default(uuid())
+  tipo               String
+  granted            Boolean   @default(false)
+  fechaConsentimiento DateTime @map("fecha_consentimiento")
+  
+  deletedAt          DateTime? @map("deleted_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  
+  clienteId          String    @map("cliente_id")
+  cliente            Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  
+  @@index([clienteId], name: "idx_consentimiento_cliente")
+  @@index([tipo], name: "idx_consentimiento_tipo")
+  @@map("consentimiento")
+}
+
+model DerechoARCO {
+  id                String            @id @default(uuid())
+  tipo              TipoDerechoARCO
+  estado            EstadoDerechoARCO @default(PENDIENTE)
+  fechaSolicitud    DateTime          @map("fecha_solicitud")
+  fechaRespuesta    DateTime?         @map("fecha_respuesta")
+  
+  deletedAt         DateTime?         @map("deleted_at")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+  
+  clienteId         String            @map("cliente_id")
+  cliente           Cliente           @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  
+  @@index([clienteId], name: "idx_derecho_arco_cliente")
+  @@index([tipo], name: "idx_derecho_arco_tipo")
+  @@index([estado], name: "idx_derecho_arco_estado")
+  @@map("derecho_arco")
+}
+
+model Brecha {
+  id                   String        @id @default(uuid())
+  descripcion          String
+  fechaDeteccion       DateTime      @map("fecha_deteccion")
+  fechaNotificacionAepd DateTime?    @map("fecha_notificacion_aepd")
+  estado               EstadoBrecha  @default(DETECTADA)
+  medidas              String?
+  
+  deletedAt            DateTime?     @map("deleted_at")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+  
+  @@index([estado], name: "idx_brecha_estado")
+  @@index([fechaDeteccion], name: "idx_brecha_fecha_deteccion")
+  @@map("brecha")
+}
+
+model Nota {
+  id           String    @id @default(uuid())
+  contenido    String
+  
+  deletedAt    DateTime? @map("deleted_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  
+  clienteId    String?   @map("cliente_id")
+  cliente      Cliente?  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  
+  oportunidadId String?  @map("oportunidad_id")
+  oportunidad   Oportunidad? @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
+  
+  usuarioId    String?   @map("usuario_id")
+  usuario      User?     @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  
+  @@index([clienteId], name: "idx_nota_cliente")
+  @@index([oportunidadId], name: "idx_nota_oportunidad")
+  @@index([usuarioId], name: "idx_nota_usuario")
+  @@map("nota")
+}
+
+model Legislacion {
+  id               String    @id @default(uuid())
+  titulo           String
+  tipo             String
+  numero           String?
+  url              String?
+  fechaPublicacion DateTime? @map("fecha_publicacion")
+  contenido        String?
+  
+  deletedAt        DateTime? @map("deleted_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  
+  favoritos        Favorito[]
+  
+  @@index([titulo], name: "idx_legislacion_titulo")
+  @@index([tipo], name: "idx_legislacion_tipo")
+  @@map("legislacion")
+}
+
+model Favorito {
+  id            String      @id @default(uuid())
+  
+  deletedAt     DateTime?   @map("deleted_at")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  
+  legislacionId String      @map("legislacion_id")
+  legislacion   Legislacion @relation(fields: [legislacionId], references: [id], onDelete: Cascade)
+  
+  usuarioId     String      @map("usuario_id")
+  usuario       User        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  @@index([legislacionId], name: "idx_favorito_legislacion")
+  @@index([usuarioId], name: "idx_favorito_usuario")
+  @@map("favorito")
+}
+
+enum TipoIntegracion {
+  MICROSOFT
+  GOOGLE
+}
+
+model Integracion {
+  id            String         @id @default(uuid())
+  tipo          TipoIntegracion
+  accessToken   String?        @map("access_token")
+  refreshToken  String?        @map("refresh_token")
+  expiresAt     DateTime?      @map("expires_at")
+  
+  deletedAt     DateTime?      @map("deleted_at")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  
+  usuarioId     String         @map("usuario_id")
+  usuario       User           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  @@index([usuarioId], name: "idx_integracion_usuario")
+  @@index([tipo], name: "idx_integracion_tipo")
+  @@map("integracion")
+}
+
+model Alerta {
+  id            String    @id @default(uuid())
+  palabrasClave String    @map("palabras_clave")
+  tipo          String?
+  
+  activa        Boolean   @default(true)
+  
+  deletedAt     DateTime? @map("deleted_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  usuarioId     String    @map("usuario_id")
+  usuario       User      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  @@index([usuarioId], name: "idx_alerta_usuario")
+  @@index([activa], name: "idx_alerta_activa")
+  @@map("alerta")
+}
+
+enum TipoPrediccion {
+  RESULTADO
+  DURACION
+  COSTES
+  EXITO
+  RIESGO_PRESCRIPCION
+}
+
+model Prediccion {
+  id              String        @id @default(uuid())
+  tipoPrediccion  TipoPrediccion @map("tipo_prediccion")
+  resultado       String
+  probabilidad    Float
+  factores        Json?
+  
+  deletedAt       DateTime?     @map("deleted_at")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  
+  expedienteId    String        @map("expediente_id")
+  expediente      Expediente    @relation(fields: [expedienteId], references: [id], onDelete: Cascade)
+  
+  @@index([expedienteId], name: "idx_prediccion_expediente")
+  @@index([tipoPrediccion], name: "idx_prediccion_tipo")
+  @@index([createdAt], name: "idx_prediccion_fecha")
+  @@map("prediccion")
+}
