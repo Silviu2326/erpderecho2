@@ -1,0 +1,18 @@
+Crea la documentación completa del backend en /tmp/derecho/abogados/docs/backend/ con los siguientes archivos:
+
+1. **11_CACHING.md** - Estrategias de caché con Redis:
+   - Configuración de Redis
+   - Patterns: Cache-Aside, Write-Through, Write-Behind
+   - TTL por tipo de dato
+   - Invalidación de caché
+   - Código TypeScript completo
+
+2. **12_COLAS.md** - Colas de procesamiento con Bull:
+   - Configuración de colas
+   - Procesamiento de emails
+   - OCR de documentos
+   - Generación de PDFs
+   - Retry logic y dead letters
+   - Código completo
+
+Cada archivo debe ser muy completo con código TypeScript profesional, ejemplos prácticos y explicaciones detalladas.

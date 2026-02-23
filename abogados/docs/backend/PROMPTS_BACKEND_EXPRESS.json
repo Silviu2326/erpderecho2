@@ -1,0 +1,232 @@
+{
+  "project": "ERP Derecho - Backend Express.js Prompts",
+  "description": "Lista detallada de prompts para desarrollar el backend con Node.js + Express + TypeScript + Prisma",
+  "total_prompts": 50,
+  "tech_stack": {
+    "runtime": "Node.js 20+",
+    "framework": "Express.js",
+    "orm": "Prisma",
+    "database": "PostgreSQL",
+    "auth": "JWT + Refresh Tokens",
+    "validation": "Zod",
+    "documentation": "Swagger/OpenAPI"
+  },
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Setup y Configuración del Proyecto",
+      "prompts": [
+        {
+          "id": 1,
+          "title": "Inicializar proyecto Express con TypeScript",
+          "prompt": "Crea la estructura completa de un proyecto backend para un ERP de bufete de abogados usando Node.js 20+, Express.js y TypeScript. Incluye:\n\n1. Inicializa el proyecto con npm init y configura TypeScript (tsconfig.json) con target ES2022, module commonjs, strict mode habilitado, paths absolutos con @/\n\n2. Crea estructura de carpetas: src/\n   - config/ (configuración de entorno, base de datos)\n   - controllers/ (controladores REST)\n   - services/ (lógica de negocio)\n   - repositories/ (acceso a datos Prisma)\n   - middleware/ (auth, validation, error handling)\n   - routes/ (definición de rutas)\n   - dto/ (data transfer objects)\n   - types/ (tipos TypeScript)\n   - utils/ (helpers)\n   - validators/ (zod schemas)\n   - errors/ (custom errors)\n\n3. Configura package.json con scripts: dev (tsx watch), build (tsc), start (node), lint (eslint), test (jest)\n\n4. Instala dependencias: express, cors, helmet, morgan, dotenv, zod, prisma, @prisma/client, jsonwebtoken, bcryptjs, uuid, express-rate-limit, swagger-ui-express, swagger-jsdoc, winston, pino\n\n5. Crea main.ts con Express app, middleware basics, health check endpoint, y graceful shutdown\n\n6. Configura variables de entorno con dotenv: PORT, NODE_ENV, DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET, REDIS_URL, etc.\n\n7. Configura Prisma: prisma/schema.prisma con configuración básica y cliente generado\n\n8. Configura Winston logger con rotación de archivos y logs en JSON para producción\n\n9. Configura Swagger: swagger.ts con básico API info y endpoints de ejemplo\n\n10. Crea script de inicialización que verifique conexión a DB antes de iniciar servidor\n\nUsa las convenciones de código profesional: async/await, errores tipados, tipos explícitos, JSDoc básico."
+        },
+        {
+          "id": 2,
+          "title": "Configurar Prisma Schema completo",
+          "prompt": "Crea el archivo prisma/schema.prisma completo para el ERP de bufete de abogados con TODAS las entidades basadas en docs/backend/DATABASE/. Incluye:\n\n1. Generador y datasource para PostgreSQL\n\n2. Enums: usuario_rol, cliente_tipo, expediente_tipo, expediente_estado, factura_estado, forma_pago, prioridad, lopdgdd_base_legal, lopdgdd_categoria_datos, lopdgdd_nivel_riesgo, lopdgdd_tipo_derecho, lopdgdd_derecho_estado, lopdgdd_tipo_brecha, lopdgdd_severidad, lopdgdd_brecha_estado, auditoria_accion, auditoria_resultado\n\n3. Modelos principales:\n   - Usuario: id, email (unique), password_hash, nombre, apellido1, apellido2, rol, especialidad, numero_colegiado, telefono, avatar_url, idioma, moneda, activo, ultimo_acceso, timestamps, version, soft delete\n   - Cliente: id, tipo, nif (unique), nombre, razon_social, email, telefono, direccion, codigo_postal, ciudad, provincia, pais, iban, activo, timestamps\n   - Expediente: id, numero_expediente (unique), cliente_id, abogado_id, tipo, estado, prioridad, fecha_apertura, fecha_cierre, asunto, descripcion, cuantia, moneda, facturable, timestamps\n   - Factura: id, numero_factura (unique), serie, cliente_id, expediente_id, usuario_id, fecha_emision, fecha_vencimiento, concepto, base_imponible, iva, total, estado, forma_pago, timestamps\n   - Documento: id, nombre, tipo, expediente_id, cliente_id, usuario_id, url, hash, tamano, mime_type, firmado, timestamps\n   - Actuacion: id, expediente_id, tipo, fecha, descripcion, documento_id, usuario_id, timestamps\n   - LineaFactura: id, factura_id, concepto, cantidad, precio, descuento, iva_porcentaje, total\n\n4. Modelos LOPDGDD:\n   - ActividadRAT: id, nombre, descripcion, finalidad, base_legal, categorias_datos[], transferencia_internacional, periodo_retencion, activo, timestamps\n   - Consentimiento: id, cliente_id, tipo_consentimiento, texto, activo, fecha_concesion, fecha_revocado, ip_concesion, timestamps\n   - DerechoARCO: id, cliente_id, tipo_derecho, descripcion, estado, fecha_recepcion, fecha_respuesta, timestamps\n   - BrechaSeguridad: id, titulo, descripcion, tipo, numero_afectados, severidad, estado, timestamps\n\n5. Modelos CRM:\n   - Lead: id, cliente_id, fuente, estado, probabilidad, valor_estimado, timestamps\n   - Oportunidad: id, lead_id, nombre, etapa, probabilidad, valor, cierre_previsto, timestamps\n   - ActividadCRM: id, oportunidad_id, tipo, descripcion, fecha, realizada, timestamps\n\n6. Modelos Oficio:\n   - Turno: id, tipo_turno, fecha_asignacion, cliente_anonimo, descripcion, abogado_id, estado, timestamps\n   - Guardia: id, usuario_id, fecha_inicio, fecha_fin, centro, tipo, timestamps\n   - Liquidacion: id, turno_id, actuaciones, honorarios, gastos, total, estado, timestamps\n\n7. Modelos Auditoría:\n   - AuditoriaLog: id, accion, entidad, entidad_id, usuario_id, ip_address, datos_anteriores, datos_nuevos, resultado, timestamps\n\n8. Índices: todos los índices necesarios para queries frecuentes\n\n9. Ejecuta prisma generate y prisma db push para crear la base de datos\n\nUsa las convenciones: nombres en snake_case para DB, camelCase para código, timestamps automáticos."
+        },
+        {
+          "id": 3,
+          "title": "Middleware de autenticación y seguridad",
+          "prompt": "Implementa el sistema completo de autenticación JWT con refresh tokens usando Express.js. Crea:\n\n1. Middleware de autenticación (src/middleware/auth.middleware.ts):\n   - Función authenticateToken que verifica JWT de acceso\n   - Extrae userId y email del token\n   - Adjunta usuario a req.user\n   - Maneja TokenExpiredError y JsonWebTokenError\n\n2. Middleware de autorización (src/middleware/authorize.middleware.ts):\n   - Función authorize(...roles) que verifica rol de usuario\n   - Soporta: admin, abogado, letrado, secretario, becario, colaborador\n   - Retorna 403 si rol no autorizado\n\n3. Generador de tokens (src/utils/token.util.ts):\n   - generateAccessToken(user): firma JWT con 15min de expiración\n   - generateRefreshToken(user): firma JWT con 7 días de expiración\n   - verifyToken(token): verifica y decodifica\n   - secrets separados para access y refresh\n\n4. Controlador de auth (src/controllers/auth.controller.ts):\n   - POST /api/v1/auth/login: valida credenciales, genera tokens, retorna user + tokens\n   - POST /api/v1/auth/register: crea nuevo usuario, genera tokens\n   - POST /api/v1/auth/logout: blacklista refresh token (opcional)\n   - POST /api/v1/auth/refresh: intercambia refresh token por nuevo access token\n   - GET /api/v1/auth/me: retorna usuario actual\n   - POST /api/v1/auth/password/reset: envía email con token de reset\n   - POST /api/v1/auth/password/change: cambia password con validación de old password\n\n5. Servicio de auth (src/services/auth.service.ts):\n   - validateUser(email, password): busca usuario, compara bcrypt\n   - login(user): genera tokens\n   - register(data): crea usuario con hash de password\n   - refreshToken(token): verifica y genera nuevo access token\n\n6. DTOs de validación (src/dto/auth.dto.ts) con Zod:\n   - LoginDto: email (email valido), password (min 6)\n   - RegisterDto: email, password (min 8), nombre (min 2), rol (opcional)\n   - RefreshTokenDto: refreshToken (string no vacío)\n   - ChangePasswordDto: oldPassword, newPassword (min 8)\n\n7. Decoradores personalizados:\n   - @CurrentUser() para obtener usuario actual en controller\n   - @Roles(...roles) para especificar roles requeridos\n\n8. Manejo de errores:\n   - 401 para credenciales inválidas\n   - 403 para autorización fallida\n   - 429 para demasiados intentos de login\n\nUsa las variables de entorno: JWT_SECRET, JWT_EXPIRES_IN, JWT_REFRESH_SECRET, JWT_REFRESH_EXPIRES_IN. Implementa rate limiting de 5 intentos por minuto para login."
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Módulos Core - Usuarios y Clientes",
+      "prompts": [
+        {
+          "id": 4,
+          "title": "API de Usuarios completa",
+          "prompt": "Implementa la API REST completa de gestión de usuarios usando Express.js. Estructura:\n\n1. Repository (src/repositories/usuario.repository.ts):\n   - findAll(filters, pagination): retorna usuarios con paginación\n   - findById(id): retorna usuario por UUID\n   - findByEmail(email): retorna usuario por email\n   - create(data): crea nuevo usuario\n   - update(id, data): actualiza usuario\n   - softDelete(id): marca deleted_at\n   - updateLastLogin(id): actualiza ultimo_acceso\n\n2. Servicio (src/services/usuario.service.ts):\n   - getUsuarios(filters, page, limit): wrapper del repo\n   - getUsuarioById(id): incluye validación de existencia\n   - createUsuario(data): hash de password antes de crear\n   - updateUsuario(id, data): actualiza con version check\n   - deleteUsuario(id): soft delete\n   - assignRole(id, rol): cambia rol de usuario\n\n3. Controlador (src/controllers/usuario.controller.ts):\n   - GET /api/v1/usuarios: lista usuarios (admin only)\n     - Query params: page, limit, rol, activo, buscar\n   - GET /api/v1/usuarios/:id: get usuario por ID\n   - POST /api/v1/usuarios: crear usuario (admin)\n   - PUT /api/v1/usuarios/:id: actualizar usuario\n   - DELETE /api/v1/usuarios/:id: soft delete usuario\n   - PUT /api/v1/usuarios/:id/roles: asignar rol\n   - GET /api/v1/usuarios/me: obtener perfil propio\n   - PUT /api/v1/usuarios/me: actualizar perfil propio\n   - PUT /api/v1/usuarios/me/password: cambiar mi password\n\n4. Rutas (src/routes/usuario.routes.ts):\n   - Agrupa todas las rutas bajo /api/v1/usuarios\n   - Aplica middleware de autenticación a todas\n   - Ruta /me accesible para cualquier usuario autenticado\n   - Rutas de admin protegidas con authorize('admin')\n\n5. DTOs (src/dto/usuario.dto.ts) con Zod schemas:\n   - CreateUsuarioDto: email (email), password (min 8), nombre (min 2), apellido1, apellido2, rol (enum), especialidad, numero_colegiado, telefono\n   - UpdateUsuarioDto: todos los campos opcionales\n   - UsuarioFiltersDto: rol, activo, buscar (like sobre nombre/email)\n\n6. Validación de unicidad: email debe ser único\n\n7. Respuestas consistentes:\n   - GET /: { success: true, data: [], meta: { page, limit, total, totalPages } }\n   - POST: { success: true, data: { ... } }\n   - Errores: { success: false, error: { code, message } }"
+        },
+        {
+          "id": 5,
+          "title": "API de Clientes completa",
+          "prompt": "Implementa la API REST completa de gestión de clientes para el ERP de abogados. Estructura:\n\n1. Repository (src/repositories/cliente.repository.ts):\n   - findAll(filters, pagination): con filtros por tipo, activo, buscar (nombre/NIF)\n   - findById(id): retorna cliente con relaciones (expedientes, facturas)\n   - findByNif(nif): búsqueda por NIF único\n   - findByEmail(email): búsqueda por email\n   - create(data): crea cliente\n   - update(id, data): actualiza cliente\n   - softDelete(id): soft delete\n   - getExpedientes(clienteId): expedientes del cliente\n   - getFacturas(clienteId): facturas del cliente\n\n2. Controlador (src/controllers/cliente.controller.ts):\n   - GET /api/v1/clientes: lista con filtros\n     - Query: page, limit, tipo (particular/empresa/autonomo), activo, buscar, ordenar\n   - GET /api/v1/clientes/:id: get cliente con datos relacionados\n   - POST /api/v1/clientes: crear cliente\n   - PUT /api/v1/clientes/:id: actualizar cliente\n   - DELETE /api/v1/clientes/:id: soft delete\n   - GET /api/v1/clientes/:id/expedientes: lista de expedientes\n   - GET /api/v1/clientes/:id/facturas: lista de facturas\n   - GET /api/v1/clientes/:id/documentos: lista de documentos\n   - POST /api/v1/clientes/:id/contactos: añadir contacto\n   - GET /api/v1/clientes/buscar: búsqueda rápida por NIF/nombre\n\n3. DTOs (src/dto/cliente.dto.ts):\n   - CreateClienteDto: tipo (enum), nif (formato España), nombre, razon_social, email, telefono, direccion, codigo_postal, ciudad, provincia, pais, iban, iva_exento, idioma, forma_pago, descuento, observaciones\n   - UpdateClienteDto: todos opcionales\n   - ClienteFiltersDto: tipo, activo, buscar, fecha_desde, fecha_hasta\n\n4. Validaciones específicas:\n   - NIF español: 8 dígitos + letra calculada, o NIE (X/Y/Z + 7 dígitos + letra)\n   - NIF empresa: letra + 8 dígitos\n   - Email válido\n   - Teléfono español (9 dígitos starting en 6/7/8/9)\n\n5. Cálculos automáticos:\n   - al crear cliente: cliente_desde = CURRENT_DATE\n   - generar código de cliente único si no se provee"
+        }
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Gestión de Expedientes",
+      "prompts": [
+        {
+          "id": 6,
+          "title": "API de Expedientes completa",
+          "prompt": "Implementa la API REST completa de gestión de expedientes judiciales. Estructura:\n\n1. Repository (src/repositories/expediente.repository.ts):\n   - findAll(filters, pagination): filtros múltiples\n   - findById(id): con cliente, abogado, documentos, actuaciones, facturas\n   - findByNumero(numero): búsqueda por número de expediente\n   - findByCliente(clienteId): todos los expedientes de un cliente\n   - findByAbogado(abogadoId): todos los expedientes de un abogado\n   - findByEstado(estado): expedientes por estado\n   - create(data): crea expediente con número automático\n   - update(id, data): actualiza con version check\n   - softDelete(id): archiva en lugar de borrar\n\n2. Controlador (src/controllers/expediente.controller.ts):\n   - GET /api/v1/expedientes: lista completa\n     - Query: page, limit, estado, tipo, cliente_id, abogado_id, buscar, fecha_desde, fecha_hasta, ordenar\n   - GET /api/v1/expedientes/:id: get detalle con relaciones\n   - POST /api/v1/expedientes: crear expediente\n   - PUT /api/v1/expedientes/:id: actualizar\n   - DELETE /api/v1/expedientes/:id: архивировать (soft delete)\n   - GET /api/v1/expedientes/:id/actuaciones: lista de actuaciones\n   - POST /api/v1/expedientes/:id/actuaciones: crear actuación\n   - GET /api/v1/expedientes/:id/documentos: lista de documentos\n   - POST /api/v1/expedientes/:id/documentos: subir documento\n   - GET /api/v1/expedientes/:id/timeline: timeline completo\n   - GET /api/v1/expedientes/:id/prescripciones: lista de prescripciones\n   - PUT /api/v1/expedientes/:id/asignar: asignar a abogado\n   - GET /api/v1/expedientes/calendario: calendario de audiencias/plazos\n   - GET /api/v1/expedientes/buscar: búsqueda avanzada\n\n3. DTOs (src/dto/expediente.dto.ts):\n   - CreateExpedienteDto: cliente_id (UUID), tipo (enum), asunto, descripcion, cuantia, moneda, facturable, prioridad, jurisdiccion, juzgado, numero_procedimiento, rol_proceso\n   - UpdateExpedienteDto: todos opcionales\n   - ExpedienteFiltersDto: estado, tipo, cliente_id, abogado_id, fecha_desde, fecha_hasta, buscar\n\n4. Generación automática de número:\n   - Formato: AAAA-NNNN (año secuencial)\n   - Pool de números por año\n   - Bloqueo para evitar duplicados\n\n5. Notificaciones:\n   - Al crear: notificar al abogado asignado\n   - Al cerrar: notificar al cliente\n   - Al cambiar estado: actualizar timeline"
+        },
+        {
+          "id": 7,
+          "title": "API de Actuaciones de Expediente",
+          "prompt": "Implementa la API REST para gestionar actuaciones dentro de expedientes. Estructura:\n\n1. Repository (src/repositories/actuacion.repository.ts):\n   - findAll(filters, pagination)\n   - findById(id)\n   - findByExpediente(expedienteId): todas las actuaciones de un expediente\n   - create(data)\n   - update(id, data)\n   - softDelete(id)\n\n2. Controlador (src/controllers/actuacion.controller.ts):\n   - GET /api/v1/actuaciones: lista global\n   - GET /api/v1/actuaciones/:id: get actuación\n   - POST /api/v1/actuaciones: crear actuación\n   - PUT /api/v1/actuaciones/:id: actualizar\n   - DELETE /api/v1/actuaciones/:id: eliminar\n\n   - Endpoints embebidos en expediente:\n   - GET /api/v1/expedientes/:expedienteId/actuaciones\n   - POST /api/v1/expedientes/:expedienteId/actuaciones\n\n3. DTOs:\n   - CreateActuacionDto: expediente_id, tipo (escritura/presentacion/audiencia/diligencia/otro), fecha, descripcion, documento_id (opcional)\n   - UpdateActuacionDto\n\n4. Tipos de actuación:\n   - escritura: Documento presentado\n   - presentacion: Escrito presentado\n   - audiencia: Asistencia a audiencia\n   - diligencia: Diligencia judicial\n   - otro: Otra actuación"
+        }
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Facturación",
+      "prompts": [
+        {
+          "id": 8,
+          "title": "API de Facturación completa",
+          "prompt": "Implementa la API REST completa de facturación para el ERP de abogados. Estructura:\n\n1. Repository (src/repositories/factura.repository.ts):\n   - findAll(filters, pagination)\n   - findById(id): con líneas, cliente, expediente\n   - findByNumero(numero): búsqueda por número\n   - findByCliente(clienteId): facturas de cliente\n   - findByExpediente(expedienteId): facturas de expediente\n   - findPendientes(): facturas pendientes de pago\n   - findVencidas(): facturas vencidas no pagadas\n   - create(data): crea factura con líneas\n   - update(id, data): actualiza factura\n   - softDelete(id): anula factura\n\n2. Controlador (src/controllers/factura.controller.ts):\n   - GET /api/v1/facturas: lista con filtros\n     - Query: page, limit, estado, cliente_id, expediente_id, serie, fecha_desde, fecha_hasta, ordenar\n   - GET /api/v1/facturas/:id: get detalle\n   - POST /api/v1/facturas: crear factura\n   - PUT /api/v1/facturas/:id: actualizar\n   - DELETE /api/v1/facturas/:id: anular\n   - POST /api/v1/facturas/:id/pagar: registrar pago\n   - GET /api/v1/facturas/:id/pdf: generar PDF\n   - POST /api/v1/facturas/:id/enviar: enviar por email\n   - GET /api/v1/facturas/pendientes: lista pendientes\n   - GET /api/v1/facturas/vencidas: lista vencidas\n   - POST /api/v1/facturas/:id/recurrir: crear factura recurrente\n\n3. DTOs (src/dto/factura.dto.ts):\n   - CreateFacturaDto: serie, cliente_id, expediente_id (opcional), fecha_emision, fecha_vencimiento, concepto, lineas (array), forma_pago\n   - LineaFacturaDto: concepto, cantidad, precio, descuento, iva_porcentaje\n   - UpdateFacturaDto\n   - RegistrarPagoDto: fecha_pago, forma_pago, iban (opcional)\n\n4. Cálculos automáticos:\n   - generación de número de factura: SERIE-AAAA-NNNN\n   - cálculo de total: suma de líneas + IVA - descuentos\n   - cálculo de vencimiento: fecha_emision + 30/60/90 días según configuración\n\n5. Estados y transiciones:\n   - borrador -> pendiente\n   - pendiente -> pagada / anulada\n   - pagada -> rectificada\n   - Control de fechas: si fecha_vencimiento < hoy -> pendiente -> vencida"
+        },
+        {
+          "id": 9,
+          "title": "Generación PDF de Facturas",
+          "prompt": "Implementa el servicio de generación de PDFs de facturas usando PDFKit o similar. Estructura:\n\n1. Servicio (src/services/pdf.service.ts):\n   - generateFacturaPDF(facturaId): genera PDF de factura\n   - generateFacturaHTML(facturaId): genera HTML para email\n\n2. Incluir en PDF:\n   - Header: logo del bufete, datos fiscales (CIF, Colegiado)\n   - Datos factura: número, serie, fecha emisión, fecha vencimiento\n   - Datos cliente: nombre, NIF, dirección\n   - Línea de cabecera: concepto, cantidad, precio unitario, IVA, total\n   - Líneas de factura: concepto, cantidad, precio, dto, base, IVA, total\n   - Totales: base imponible, IVA desglosado, retención, total\n   - Pie: banco para transferencia, IBAN, SWIFT, observaciones\n\n3. Métodos:\n   - streamToBuffer(): convierte stream a buffer\n   - saveToFile(path): guarda en disco\n   - sendViaEmail(facturaId, email): envía PDF adjunto\n\n4. Cacheo:\n   - Guardar hash del contenido para evitar regenerar\n   - Regenerar solo si factura se modifica"
+        }
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "Gestión de Documentos",
+      "prompts": [
+        {
+          "id": 10,
+          "title": "API de Documentos con Upload",
+          "prompt": "Implementa la API REST completa para gestión de documentos con upload de archivos. Estructura:\n\n1. Repository (src/repositories/documento.repository.ts):\n   - findAll(filters, pagination)\n   - findById(id): retorna documento con metadatos\n   - findByExpediente(expedienteId): documentos del expediente\n   - findByCliente(clienteId): documentos del cliente\n   - findByUsuario(usuarioId): documentos subidos por usuario\n   - create(data): crea registro de documento\n   - update(id, data): actualiza metadatos\n   - softDelete(id): elimina documento\n\n2. Controlador (src/controllers/documento.controller.ts):\n   - GET /api/v1/documentos: lista global\n   - GET /api/v1/documentos/:id: get documento\n   - POST /api/v1/documentos: crear metadata (pre-upload)\n   - PUT /api/v1/documentos/:id: actualizar metadata\n   - DELETE /api/v1/documentos/:id: eliminar documento\n   - POST /api/v1/documentos/:id/upload: upload de archivo (multipart/form-data)\n   - GET /api/v1/documentos/:id/descargar: descargar archivo\n   - POST /api/v1/documentos/:id/firmar: firmar digitalmente\n   - GET /api/v1/documentos/biblioteca: documentos de biblioteca\n\n   - Endpoints embebidos:\n   - GET /api/v1/expedientes/:expedienteId/documentos\n   - POST /api/v1/expedientes/:expedienteId/documentos\n   - GET /api/v1/clientes/:clienteId/documentos\n\n3. Upload de archivos:\n   - Multer para multipart/form-data\n   - Validar tipo MIME: pdf, doc, docx, txt, jpg, png\n   - Validar tamaño máximo: 50MB\n   - Generar nombre único: UUID + extensión original\n   - Guardar en: ./uploads/ o AWS S3\n   - Calcular hash SHA-256 del contenido\n\n4. DTOs (src/dto/documento.dto.ts):\n   - CreateDocumentoDto: nombre, tipo, expediente_id, cliente_id, descripcion\n   - UploadDto: file (multipart)\n   - UpdateDocumentoDto"
+        },
+        {
+          "id": 11,
+          "title": "OCR de Documentos con Colas",
+          "prompt": "Implementa el servicio de OCR para extraer texto de documentos subidos usando Bull queue. Estructura:\n\n1. Cola Bull (src/jobs/ocr.job.ts):\n   - Queue: 'ocr'\n   - Job: procesar documento por ID\n   - Retry: 3 intentos con backoff exponencial\n\n2. Worker de procesamiento:\n   - Descargar documento desde storage\n   - Extraer texto con Tesseract.js o AWS Textract\n   - Guardar texto extraído en documento.texto_extraido\n   - Actualizar estado: processing -> completed / failed\n\n3. API endpoint:\n   - POST /api/v1/documentos/:id/ocr: iniciar procesamiento OCR\n   - GET /api/v1/documentos/:id/ocr: obtener resultado OCR\n\n4. Estados del OCR:\n   - pending: no procesado\n   - processing: en proceso\n   - completed: completado\n   - failed: error\n\n5. Búsqueda full-text:\n   - Indexar texto extraído en PostgreSQL\n   - Búsqueda con tsvector/tsquery"
+        }
+      ]
+    },
+    {
+      "phase": 6,
+      "name": "Módulos Adicionales",
+      "prompts": [
+        {
+          "id": 12,
+          "title": "API de Turnos de Oficio",
+          "prompt": "Implementa la API REST para gestión de Turnos de Oficio y Assistencia Letrada. Estructura:\n\n1. Repository (src/repositories/turno.repository.ts):\n   - findAll(filters)\n   - findById(id): con actuaciones\n   - findByAbogado(abogadoId): turnos de un abogado\n   - findByFecha(fecha): turnos de una fecha\n   - findPendientes(): turnos sin atender\n   - create(data)\n   - update(id, data)\n\n2. Repository de Guardias (src/repositories/guardia.repository.ts):\n   - findAll(filters)\n   - findByUsuario(usuarioId)\n   - findByFecha(fecha)\n   - findActivas(): guardias vigentes\n   - create(data)\n   - update(id, data)\n\n3. Repository de Liquidaciones (src/repositories/liquidacion.repository.ts):\n   - findAll(filters)\n   - findByTurno(turnoId)\n   - create(data): calcula totals\n\n4. Controladores:\n   - Turnos: CRUD completo, asignar, atender, completar\n   - Guardias: CRUD, inscribirse, cancelar\n   - Liquidaciones: CRUD, calcular, aprobar, exportar\n\n5. DTOs específicos:\n   - CreateTurnoDto: tipo_turno, fecha_asignacion, cliente_anonimo (datos cliente anónimo), descripcion_caso\n   - AtenderTurnoDto: actuacion_realizada, resolucion\n   - CreateGuardiaDto: fecha_inicio, fecha_fin, centro, tipo\n   - CreateLiquidacionDto: turno_id, actuaciones[], honorarios, gastos\n\n6. Cálculos de liquidación:\n   - Por turno: número de actuaciones * baremo\n   - Gastos: desplazamiento, etc\n   - Total: honorarios + gastos"
+        },
+        {
+          "id": 13,
+          "title": "API de Prescripciones",
+          "prompt": "Implementa la API REST para gestión de prescripciones de expedientes. Estructura:\n\n1. Repository (src/repositories/prescripcion.repository.ts):\n   - findAll(filters)\n   - findByExpediente(expedienteId)\n   - findProximas(dias): prescripciones en próximos X días\n   - findActivas(): sin prescribir\n   - create(data)\n   - update(id, data)\n\n\n2. Controlador (src/controllers/prescripcion.controller.ts):\n   - GET /api/v1/prescripciones: lista\n   - GET /api/v1/prescripciones/:id: detalle\n   - POST /api/v1/prescripciones: crear\n   - PUT /api/v1/prescripciones/:id: actualizar\n   - GET /api/v1/prescripciones/proximas: próximas a prescribir\n   - GET /api/v1/prescripciones/alertas: alertas activas\n   - POST /api/v1/prescripciones/:id/ampliar: ampliar plazo\n\n3. Job de alertas:\n   - Ejecución diaria\n   - Notificar 30/15/7 días antes\n   - Marcar como prescrita al superar fecha"
+        },
+        {
+          "id": 14,
+          "title": "API de CRM - Leads y Oportunidades",
+          "prompt": "Implementa la API REST completa del módulo CRM. Estructura:\n\n1. Repository de Leads (src/repositories/lead.repository.ts):\n   - findAll(filters), findById, findByEmail, create, update, delete\n\n2. Repository de Oportunidades (src/repositories/oportunidad.repository.ts):\n   - findAll(filters), findById, findByLead, findByEtapa, create, update\n\n3. Controladores:\n   - Leads: CRUD completo\n   - Oportunidades: CRUD, moverEtapa, ganar, perder\n   - Pipeline: GET /api/v1/crm/pipeline (agrupado por etapa)\n\n4. DTOs:\n   - CreateLeadDto: cliente_id, fuente, contacto_inicial, necesidades\n   - CreateOportunidadDto: lead_id, nombre, valor, etapa, cierre_previsto\n   - MoverEtapaDto: etapa_nueva, motivo\n\n5. Pipeline etapas:\n   - contacto_inicial -> calificacion -> propuesta -> negociacion -> ganado / perdido"
+        }
+      ]
+    },
+    {
+      "phase": 7,
+      "name": "LOPDGDD y Compliance",
+      "prompts": [
+        {
+          "id": 15,
+          "title": "API de Registro RAT (LOPDGDD)",
+          "prompt": "Implementa la API REST para el Registro de Actividades de Tratamiento según RGPD. Estructura:\n\n1. Repository (src/repositories/actividadRAT.repository.ts):\n   - findAll(), findById, create, update, delete\n\n2. Controlador (src/controllers/actividadRAT.controller.ts):\n   - GET /api/v1/lopdgdd/rat: lista actividades\n   - GET /api/v1/lopdgdd/rat/:id: detalle\n   - POST /api/v1/lopdgdd/rat: crear actividad\n   - PUT /api/v1/lopdgdd/rat/:id: actualizar\n   - DELETE /api/v1/lopdgdd/rat/:id: eliminar\n   - GET /api/v1/lopdgdd/rat/exportar: exportar a JSON\n   - POST /api/v1/lopdgdd/rat/importar: importar desde JSON\n\n3. DTOs:\n   - CreateActividadRATDto: nombre, descripcion, finalidad, base_legal, categorias_datos[], interesados[], destinatarios[], transferencia_internacional, mecanismo_transferencia, pais_destino, periodo_retencion, medida_seguridad, decisiones_automatizadas, perfilado\n\n4. Validaciones:\n   - Base legal obligatoria\n   - Al menos una categoría de datos\n   - Si transferencia_internacional = true, requiere mecanismo\n\n5. Export JSON: estructura según documentación AEPD"
+        },
+        {
+          "id": 16,
+          "title": "API de Consentimientos",
+          "prompt": "Implementa la gestión de consentimientos RGPD. Estructura:\n\n1. Repository (src/repositories/consentimiento.repository.ts):\n   - findAll(filters), findById, findByCliente, create, update, revoke\n\n2. Controlador (src/controllers/consentimiento.controller.ts):\n   - GET /api/v1/lopdgdd/consentimientos: lista\n   - GET /api/v1/lopdgdd/consentimientos/:id: detalle\n   - POST /api/v1/lopdgdd/consentimientos: registrar\n   - PUT /api/v1/lopdgdd/consentimientos/:id: actualizar\n   - POST /api/v1/lopdgdd/consentimientos/:id/revocar: revocar consentimiento\n\n3. DTOs:\n   - CreateConsentimientoDto: cliente_id, tipo_consentimiento, texto, obligatorio, doble_optin\n\n4. Tipos de consentimiento:\n   - cookies, analiticas, marketing, terceros, comercial, newsletter"
+        },
+        {
+          "id": 17,
+          "title": "API de Ejercicio de Derechos",
+          "prompt": "Implementa la API para ejercer derechos ARCO (Acceso, Rectificación, Supresión, Limitación, Portabilidad, Oposición). Estructura:\n\n1. Repository (src/repositories/derechoARCO.repository.ts):\n   - findAll(filters), findById, findByCliente, create, update, close\n\n2. Controlador (src/controllers/derechoARCO.controller.ts):\n   - GET /api/v1/lopdgdd/derechos: lista solicitudes\n   - GET /api/v1/lopdgdd/derechos/:id: detalle\n   - POST /api/v1/lopdgdd/derechos: ejercitar derecho\n   - PUT /api/v1/lopdgdd/derechos/:id/procesar: procesar solicitud\n   - POST /api/v1/lopdgdd/derechos/:id/responder: enviar respuesta\n\n3. Workflow:\n   - Recepción -> Verificación identidad (10 días) -> Tramitación -> Resolución (30 días)\n   - Extensión otros 30 días si complejidad (notificar al interesado)\n\n4. DTOs:\n   - EjercerDerechoDto: cliente_id, tipo_derecho, descripcion, documento_identidad, medio_respuesta"
+        },
+        {
+          "id": 18,
+          "title": "API de Brechas de Seguridad",
+          "prompt": "Implementa la gestión de brechas de seguridad según Art. 33 RGPD. Estructura:\n\n1. Repository (src/repositories/brecha.repository.ts):\n   - findAll(filters), findById, create, update\n\n2. Controlador (src/controllers/brecha.controller.ts):\n   - GET /api/v1/lopdgdd/brechas: lista\n   - POST /api/v1/lopdgdd/brechas: notificar brecha\n   - PUT /api/v1/lopdgdd/brechas/:id: actualizar\n   - POST /api/v1/lopdgdd/brechas/:id/notificar-aepd: notificar a autoridad\n   - POST /api/v1/lopdgdd/brechas/:id/notificar-afectados: notificar interesados\n\n3. Workflow:\n   - Detección -> Evaluación (24h) -> Contención inmediata -> Notificación AEPD (72h) -> Resolución -> Comunicación afectados (si aplica)\n\n\n4. DTOs:\n   - NotificarBrechaDto: titulo, descripcion, tipo (confidencialidad/integridad/disponibilidad), numero_afectados, categorias_afectadas, medidas_inmediatas"
+        }
+      ]
+    },
+    {
+      "phase": 8,
+      "name": "Integraciones Externas",
+      "prompts": [
+        {
+          "id": 19,
+          "title": "Integración BOE",
+          "prompt": "Implementa el servicio de integración con la API del BOE. Estructura:\n\n1. Servicio (src/services/boe.service.ts):\n   - buscar(params): busca documentos\n   - obtenerDocumento(id): obtiene detalle\n   - obtenerCalendario(fecha): diario oficial\n   - getNovedades(desde): últimas publicaciones\n   - detectarDerogaciones(normaId): normas que derogan\n\n2. Controlador (src/controllers/boe.controller.ts):\n   - GET /api/v1/legislacion/boe/buscar: búsqueda\n   - GET /api/v1/legislacion/boe/:id: detalle documento\n   - GET /api/v1/legislacion/boe/calendario: calendario\n   - GET /api/v1/legislacion/boe/novedades: últimas publicaciones\n\n3. Caché:\n   - TTL 1 hora para búsquedas\n   - TTL 24 horas para documentos\n   - Cachear en Redis\n\n4. Manejo de errores:\n   - Rate limiting: 100 req/min\n   - Retry con exponential backoff\n   - Fallback a datos mock si API no disponible"
+        },
+        {
+          "id": 20,
+          "title": "Integración Microsoft 365",
+          "prompt": "Implementa la integración con Microsoft Graph API. Estructura:\n\n1. Servicio (src/services/microsoft.service.ts):\n   - OAuth: getAuthUrl, exchangeCode, refreshToken\n   - Calendar: getEvents, createEvent, updateEvent, deleteEvent\n   - Email: sendEmail, getMessages\n   - OneDrive: uploadFile, downloadFile, listFiles\n\n2. Controlador (src/controllers/microsoft.controller.ts):\n   - GET /api/v1/integraciones/microsoft/status\n   - POST /api/v1/integraciones/microsoft/connect\n   - POST /api/v1/integraciones/microsoft/disconnect\n   - GET /api/v1/integraciones/microsoft/calendar\n   - POST /api/v1/integraciones/microsoft/calendar/sync\n   - POST /api/v1/integraciones/microsoft/email/send\n\n3. Modelo de usuario:\n   - Guardar tokens encriptados en DB\n   - Refresh automático antes de expirar\n   - Desconexión: revoke tokens y limpiar\n\n4. Sincronización:\n   - Bidireccional: local <-> Microsoft\n   - Delta sync para cambios\n   - Resolución de conflictos por timestamp"
+        },
+        {
+          "id": 21,
+          "title": "Integración Google Workspace",
+          "prompt": "Implementa la integración con Google API. Estructura:\n\n1. Servicio (src/services/google.service.ts):\n   - OAuth: getAuthUrl, exchangeCode, refreshToken\n   - Calendar: equivalent a Microsoft\n   - Gmail: sendMessage, listMessages\n   - Drive: equivalent a OneDrive\n\n2. Controlador (src/controllers/google.controller.ts):\n   - Mismos endpoints que Microsoft pero con /google\n\n3. Scopes requeridos:\n   - Calendar: https://www.googleapis.com/auth/calendar\n   - Email: https://www.googleapis.com/auth/gmail.send\n   - Drive: https://www.googleapis.com/auth/drive.file"
+        },
+        {
+          "id": 22,
+          "title": "Integración Registros Públicos",
+          "prompt": "Implementa integración con Registros Públicos españoles. Estructura:\n\n1. Servicios individuales:\n   - src/services/registro-civil.service.ts: Nacimientos, defunciones, matrimonios\n   - src/services/catastro.service.ts: Consulta de inmuebles\n   - src/services/registro-propiedad.service.ts: Notas simples\n\n2. Controlador (src/controllers/registros.controller.ts):\n   - GET /api/v1/marketplace/registros/civil/buscar\n   - GET /api/v1/marketplace/registros/catastro/consultar\n   - GET /api/v1/marketplace/registros/propiedad/nota-simple\n\n3. Implementación:\n   - Simulación con datos mock para desarrollo\n   - Preparado para API reales (Registro Civil digital, Catastro, Colegio Registradores)\n   - Manejo de certificados digitales"
+        }
+      ]
+    },
+    {
+      "phase": 9,
+      "name": "Middleware y Utilidades",
+      "prompts": [
+        {
+          "id": 23,
+          "title": "Middleware de Validación Global",
+          "prompt": "Implementa middleware de validación con Zod para todas las rutas. Estructura:\n\n1. Middleware (src/middleware/validate.middleware.ts):\n   - Función validate(schema): middleware que valida req.body/params/query\n   - Soporta body, params y query\n   - Retorna 400 con errores detallados si falla\n\n2. Integración en rutas:\n   - applyValidation: función helper para usar en rutas\n   - Ejemplo: router.post('/usuarios', validate(createUsuarioDto), controller)\n\n3. Manejo de errores Zod:\n   - Convertir ZodError a formato { success: false, error: { code, details } }\n   - Incluir mensajes de error específicos por campo"
+        },
+        {
+          "id": 24,
+          "title": "Middleware de Manejo de Errores",
+          "prompt": "Implementa sistema centralizado de manejo de errores. Estructura:\n\n1. Custom Errors (src/errors/):\n   - AppError: clase base con statusCode y código\n   - NotFoundError: 404\n   - UnauthorizedError: 401\n   - ForbiddenError: 403\n   - ValidationError: 400\n   - ConflictError: 409\n\n2. Error Handler Middleware (src/middleware/error.middleware.ts):\n   - Captura todas las errores\n   - Loguea con Winston\n   - Retorna respuesta apropiada según tipo\n   - No exponer detalles internos en producción\n\n3. Async Handler (src/middleware/async.middleware.ts):\n   - Wrapper para catchear errores automáticamente en controllers\n   - Evita try-catch en cada endpoint"
+        },
+        {
+          "id": 25,
+          "title": "Logging con Winston",
+          "prompt": "Implementa sistema de logging completo con Winston. Estructura:\n\n1. Configuración (src/config/logger.config.ts):\n   - Winston logger con múltiples transports\n   - Console: desarrollo (colors, pretty print)\n   - File: errores (error.log)\n   - File: combinado (combined.log)\n   - JSON format para producción\n\n2. Usage:\n   - logger.error(message, meta)\n   - logger.warn(message, meta)\n   - logger.info(message, meta)\n   - logger.debug(message, meta)\n\n3. Morgan integration:\n   - HTTP request logging\n   - Formato: método, url, status, response-time\n\n4. Logs estructurados:\n   - Incluir: timestamp, level, message, userId, correlationId, path\n   - Correlation ID para tracking distribuido"
+        },
+        {
+          "id": 26,
+          "title": "Rate Limiting",
+          "prompt": "Implementa rate limiting con express-rate-limit. Estructura:\n\n1. Configuración (src/middleware/ratelimit.config.ts):\n   - Global: 100 requests / 15 minutos por IP\n   - Auth: 10 requests / 15 minutos por IP\n   - API: 1000 requests / 15 minutos por usuario\n\n2. Headers de respuesta:\n   - X-RateLimit-Limit\n   - X-RateLimit-Remaining\n   - X-RateLimit-Reset\n\n3. Storage:\n   - Memoria para desarrollo\n   - Redis para producción\n\n4. Skip successful requests para autenticación"
+        }
+      ]
+    },
+    {
+      "phase": 10,
+      "name": "Testing y Documentación",
+      "prompts": [
+        {
+          "id": 27,
+          "title": "Tests de Integración de Auth",
+          "prompt": "Implementa tests de integración para el módulo de autenticación usando Jest y supertest. Estructura:\n\n1. Setup (tests/setup.ts):\n   - beforeAll: iniciar app, conectar a test DB (docker)\n   - afterAll: cleanup, cerrar conexiones\n   - beforeEach: limpiar tablas\n\n2. Tests auth.controller.spec.ts:\n   - POST /api/v1/auth/login - 200 con credenciales válidas\n   - POST /api/v1/auth/login - 401 con credenciales inválidas\n   - POST /api/v1/auth/register - 201 usuario creado\n   - POST /api/v1/auth/register - 400 email duplicado\n   - POST /api/v1/auth/refresh - 200 nuevo access token\n   - GET /api/v1/auth/me - 401 sin token\n   - GET /api/v1/auth/me - 200 con token válido\n\n3. Tests usuario.controller.spec.ts:\n   - GET /api/v1/usuarios - 200 lista con paginación\n   - GET /api/v1/usuarios/:id - 200 detalle usuario\n   - POST /api/v1/usuarios - 201 crear usuario\n   - PUT /api/v1/usuarios/:id - 200 actualizar\n   - DELETE /api/v1/usuarios/:id - 204 soft delete\n\n4. Fixtures (tests/fixtures/):\n   - usuarioAdmin, usuarioAbogado, clienteExample\n\n5. Coverage target: >80%"
+        },
+        {
+          "id": 28,
+          "title": "Documentación Swagger",
+          "prompt": "Implementa documentación Swagger/OpenAPI completa. Estructura:\n\n1. Configuración (src/config/swagger.config.ts):\n   - info: title, description, version, contact\n   - servers: dev, prod URLs\n   - security schemes: bearerAuth\n\n2. Anotaciones en controladores:\n   - @swagger: documentación de cada endpoint\n   - @ApiTags: agrupar por módulo\n   - @ApiOperation: descripción de operación\n   - @ApiResponse: códigos de respuesta\n   - @ApiBearerAuth: endpoint requiere auth\n\n3. Documentar modelos:\n   - Esquemas de DTOs\n   - Ejemplos de request/response\n\n4. Endpoint: GET /api-docs retorna UI"
+        }
+      ]
+    },
+    {
+      "phase": 11,
+      "name": "Despliegue y Producción",
+      "prompts": [
+        {
+          "id": 29,
+          "title": "Docker Multi-stage",
+          "prompt": "Crea Dockerfile optimizado para producción. Estructura:\n\n1. Multi-stage build:\n   - Stage 1: builder - instala dependencias, compila TypeScript\n   - Stage 2: runner - copia solo archivos necesarios, usuario no-root\n\n2. Optimizaciones:\n   - .dockerignore para excluir node_modules, tests, docs\n   - Capas optimizadas: package.json primero, luego código\n   - Usuario no-root: erpuser\n   - Health check endpoint\n   - Shutdown graceful\n\n3. Variables de producción:\n   - NODE_ENV=production\n   - Secrets via Docker secrets o env vars\n\n4. Scripts:\n   - ENTRYPOINT [\"node\", \"dist/main.js\"]\n   - HEALTHCHECK: curl localhost:PORT/health"
+        },
+        {
+          "id": 30,
+          "title": "Docker Compose Produccion",
+          "prompt": "Crea docker-compose.yml para despliegue en producción. Estructura:\n\n1. Servicios:\n   - api: aplicación Node.js\n   - postgres: base de datos\n   - redis: caché y colas\n   - nginx: reverse proxy y load balancer\n   - certbot: SSL letsencrypt\n\n2. Redes:\n   - Frontend network\n   - Backend network (api + db + redis)\n\n3. Volúmenes:\n   - uploads: documentos subidos\n   - logs: logs de aplicación\n   - postgres_data: datos persistentes\n   - redis_data: caché persistido\n\n4. Healthchecks:\n   - api: curl /health\n   - postgres: pg_isready\n   - redis: redis-cli ping\n\n5. Nginx:\n   - SSL/TLS con letsencrypt\n   - Rate limiting\n   - Gzip compression\n   - Proxy to api container"
+        }
+      ]
+    }
+  ]
+}

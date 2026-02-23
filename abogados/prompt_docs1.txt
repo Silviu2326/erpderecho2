@@ -1,0 +1,30 @@
+Crea la documentación completa del backend en la carpeta /tmp/derecho/abogados/docs/backend/ con todos los archivos necesarios. La documentación debe incluir:
+
+1. **05_AUTENTICACION.md** - Sistema de autenticación JWT con:
+   - Flujo de login/logout
+   - Refresh tokens
+   - Roles y permisos
+   - OAuth para integraciones
+   - Códigos de ejemplo
+
+2. **06_VALIDACION.md** - Validación de datos con:
+   - DTOs con class-validator/zod
+   - Reglas de validación por entidad
+   - Sanitización de inputs
+   - Ejemplos de código
+
+3. **07_ERRORES.md** - Manejo de errores con:
+   - Formato de respuestas de error
+   - Códigos de error por módulo
+   - HTTP status codes
+   - Manejo de excepciones
+   - Logging de errores
+
+4. **08_MIDDLEWARES.md** - Middlewares con:
+   - Auth middleware
+   - Roles guard
+   - Logging
+   - Rate limiting
+   - CORS
+
+Cada archivo debe tener código de ejemplo en TypeScript, explicaciones detalladas y ser profesional. Usa un tono técnico apropiado para documentación de backend.

@@ -1,0 +1,322 @@
+{
+  "project": "ERP Derecho - Backend Development Prompts",
+  "description": "Lista de prompts para desarrollar el backend usando la documentación",
+  "total_prompts": 45,
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Setup y Estructura Base",
+      "prompts": [
+        {
+          "id": 1,
+          "title": "Crear estructura NestJS",
+          "prompt": "Crea la estructura base de un proyecto NestJS en TypeScript para el ERP de un bufete de abogados. Incluye: main.ts, app.module.ts, config/, common/ (decorators, guards, pipes, filters, interceptors), y modules/. Configura TypeScript, ESLint, Prettier y Jest. Usa la documentación de docs/backend/01_OVERVIEW.md y docs/backend/02_ARQUITECTURA.md como referencia."
+        },
+        {
+          "id": 2,
+          "title": "Configurar variables de entorno",
+          "prompt": "Crea el archivo .env.example y la configuración de environment para el proyecto NestJS. Incluye: DATABASE (host, port, user, password, name), REDIS (host, port), JWT (secret, expiresIn, refreshSecret, refreshExpiresIn), servicios externos (BOE, CENDOJ, Microsoft, Google), AWS S3, SMTP, y logging. Referencia docs/backend/02_ARQUITECTURA.md para las variables necesarias."
+        },
+        {
+          "id": 3,
+          "title": "Configurar Prisma y conexión DB",
+          "prompt": "Configura Prisma ORM con PostgreSQL. Crea prisma/schema.prisma con todas las entidades definidas en docs/backend/DATABASE/. Genera el cliente y crea el servicio de conexión a la base de datos. Incluye configuración de migrations y seed."
+        },
+        {
+          "id": 4,
+          "title": "Crear Docker Compose",
+          "prompt": "Crea docker-compose.yml con: API (Node.js), PostgreSQL, Redis, Nginx. Configura redes, volúmenes, healthchecks y variables de entorno. Referencia docs/backend/16_DESPLIEGUE.md para la configuración de producción."
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Módulo de Autenticación",
+      "prompts": [
+        {
+          "id": 5,
+          "title": "Implementar Auth Module",
+          "prompt": "Crea el módulo de autenticación con NestJS: AuthController, AuthService, JwtStrategy, RefreshTokenStrategy. Implementa login, register, logout, refresh token, me, password reset. Usa JWT con access y refresh tokens. Referencia docs/backend/05_AUTENTICACION.md."
+        },
+        {
+          "id": 6,
+          "title": "Crear JWT Guards y Decorators",
+          "prompt": "Implementa @Roles() decorator, RolesGuard, JwtAuthGuard. Crea interceptors de autenticación. Referencia docs/backend/08_MIDDLEWARES.md para la implementación de guards."
+        },
+        {
+          "id": 7,
+          "title": "Validación de DTOs",
+          "prompt": "Crea los DTOs de autenticación: LoginDto, RegisterDto, RefreshTokenDto, ForgotPasswordDto, ResetPasswordDto. Usa class-validator con reglas de validación apropiadas. Referencia docs/backend/06_VALIDACION.md."
+        }
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Gestión de Usuarios",
+      "prompts": [
+        {
+          "id": 8,
+          "title": "CRUD Usuarios",
+          "prompt": "Crea el módulo de usuarios: UsuarioController, UsuarioService, UsuarioRepository (Prisma). Implementa: findAll, findOne, create, update, delete, updateRoles. Usa soft deletes. Schema en docs/backend/DATABASE/02_USUARIOS.md."
+        },
+        {
+          "id": 9,
+          "title": "Perfil de usuario",
+          "prompt": "Implementa endpoints de perfil: getProfile, updateProfile, updatePassword, uploadAvatar. Incluye validación de cambio de contraseña."
+        }
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Gestión de Clientes",
+      "prompts": [
+        {
+          "id": 10,
+          "title": "CRUD Clientes",
+          "prompt": "Crea el módulo de clientes: ClienteController, ClienteService, ClienteRepository. Implementa CRUD completo con búsqueda, filtros, paginación. Schema en docs/backend/DATABASE/04_CLIENTES.md."
+        },
+        {
+          "id": 11,
+          "title": "Contactos de cliente",
+          "prompt": "Implementa gestión de contactos asociados a clientes: ContactoController, ContactoService. CRUD para añadir, editar, eliminar contactos de empresa."
+        },
+        {
+          "id": 12,
+          "title": "Búsqueda de clientes",
+          "prompt": "Crea endpoint de búsqueda avanzada de clientes: por NIF, nombre, email, teléfono. Implementa búsqueda fuzzy con PostgreSQL."
+        }
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "Gestión de Expedientes",
+      "prompts": [
+        {
+          "id": 13,
+          "title": "CRUD Expedientes",
+          "prompt": "Crea el módulo de expedientes: ExpedienteController, ExpedienteService, ExpedienteRepository. Implementa CRUD, estados, tipos, búsqueda. Schema en docs/backend/DATABASE/03_EXPEDIENTES.md."
+        },
+        {
+          "id": 14,
+          "title": "Timeline de Expediente",
+          "prompt": "Implementa endpoint para obtener timeline de expediente: todas las actuaciones, documentos, tareas, cambios de estado ordenados por fecha."
+        },
+        {
+          "id": 15,
+          "title": "Búsqueda de Expedientes",
+          "prompt": "Crea endpoint de búsqueda avanzada: por número, tipo, estado, cliente, abogado, fecha, materia. Incluye filtros y paginación."
+        },
+        {
+          "id": 16,
+          "title": "Asignación de Expedientes",
+          "prompt": "Implementa endpoint para asignar/reasignar expediente a abogado. Envía notificación. Controla permisos."
+        }
+      ]
+    },
+    {
+      "phase": 6,
+      "name": "Facturación",
+      "prompts": [
+        {
+          "id": 17,
+          "title": "CRUD Facturas",
+          "prompt": "Crea módulo de facturación: FacturaController, FacturaService. CRUD completo con líneas de factura, cálculos de IVA, descuentos. Schema en docs/backend/DATABASE/05_FACTURAS.md."
+        },
+        {
+          "id": 18,
+          "title": "Estados de Factura",
+          "prompt": "Implementa transiciones de estado: pendiente -> pagada/anulada. Registra pagos parciales. Genera remesas de cobro."
+        },
+        {
+          "id": 19,
+          "title": "Generación PDF",
+          "prompt": "Crea servicio para generar PDF de factura. Usa PDFKit o similar. Incluye plantilla con datos del bufete y cliente."
+        },
+        {
+          "id": 20,
+          "title": "Envío de Facturas",
+          "prompt": "Implementa endpoint para enviar factura por email. Usa servicio de email configurado. Registra en auditoría."
+        }
+      ]
+    },
+    {
+      "phase": 7,
+      "name": "Documentos",
+      "prompts": [
+        {
+          "id": 21,
+          "title": "Gestión Documentos",
+          "prompt": "Crea módulo de documentos: DocumentoController, DocumentoService. Sube, descarga, elimina documentos. Integra con AWS S3 o sistema de archivos local. Schema en docs/backend/DATABASE/06_DOCUMENTOS.md."
+        },
+        {
+          "id": 22,
+          "title": "OCR de Documentos",
+          "prompt": "Implementa procesamiento OCR de documentos subidos. Usa Tesseract o AWS Textract. Guarda texto extraído en base de datos.参考 docs/backend/12_COLAS.md para procesamiento asíncrono."
+        },
+        {
+          "id": 23,
+          "title": "Firma de Documentos",
+          "prompt": "Implementa endpoint para firmar documentos digitalmente. Genera hash SHA-256, guarda certificado. Permite verificar firma."
+        },
+        {
+          "id": 24,
+          "title": "Plantillas",
+          "prompt": "Crea módulo de plantillas: PlantillaController, PlantillaService. Merge de datos de expediente/cliente en plantillas Word/PDF."
+        }
+      ]
+    },
+    {
+      "phase": 8,
+      "name": "Turnos de Oficio",
+      "prompts": [
+        {
+          "id": 25,
+          "title": "Gestión Turnos",
+          "prompt": "Crea módulo de turnos de oficio: TurnoController, TurnoService. CRUD de turnos, asignación, atención. Referencia schema en docs/backend/DATABASE/ para las tablas necesarias."
+        },
+        {
+          "id": 26,
+          "title": "Guardias",
+          "prompt": "Implementa gestión de guardias: crear guardia, listar por fecha/centro, inscribirse. Control de solapamientos."
+        },
+        {
+          "id": 27,
+          "title": "Liquidaciones",
+          "prompt": "Crea servicio de liquidaciones de turno de oficio: cálculo de honorarios, generación de informe, exportación."
+        }
+      ]
+    },
+    {
+      "phase": 9,
+      "name": "CRM",
+      "prompts": [
+        {
+          "id": 28,
+          "title": "Módulo CRM",
+          "prompt": "Crea módulo CRM: LeadController, LeadService, OportunidadController, OportunidadService. Pipeline de ventas. Schema en docs/backend/DATABASE/08_CRM.md."
+        },
+        {
+          "id": 29,
+          "title": "Pipeline",
+          "prompt": "Implementa endpoints de pipeline: crear oportunidad, mover etapa, ganar/perder. Calcula probabilidad de cierre."
+        },
+        {
+          "id": 30,
+          "title": "Actividades CRM",
+          "prompt": "Gestión de actividades CRM: llamadas, reuniones, emails. Programación y seguimiento de tareas."
+        }
+      ]
+    },
+    {
+      "phase": 10,
+      "name": "LOPDGDD",
+      "prompts": [
+        {
+          "id": 31,
+          "title": "Registro RAT",
+          "prompt": "Crea módulo LOPDGDD: ActividadRatController, ActividadRatService. CRUD de actividades de tratamiento. Export/import JSON. Schema en docs/backend/DATABASE/09_LOPDGDD.md."
+        },
+        {
+          "id": 32,
+          "title": "Consentimientos",
+          "prompt": "Gestión de consentimientos: registrar consentimiento, revoke, historial por cliente. Doble opt-in."
+        },
+        {
+          "id": 33,
+          "title": "Derechos ARCO",
+          "prompt": "Módulo de ejercicio de derechos: acceso, rectificación, supresión, portabilidad, oposición. Workflow de procesamiento."
+        },
+        {
+          "id": 34,
+          "title": "Brechas de Seguridad",
+          "prompt": "Registro de brechas: notificar, evaluar severidad, notificar AEPD (72h), documentar medidas correctivas."
+        }
+      ]
+    },
+    {
+      "phase": 11,
+      "name": "Legislación",
+      "prompts": [
+        {
+          "id": 35,
+          "title": "Integración BOE",
+          "prompt": "Crea servicio de integración con API del BOE: buscar normas, obtener detalle, calendario. Implementa caché. Referencia docs/backend/INTEGRACIONES/BOE.md."
+        },
+        {
+          "id": 36,
+          "title": "Integración CENDOJ",
+          "prompt": "Crea servicio de jurisprudencia CENDOJ: buscar sentencias, filtros por tribunal/materia/ponente. Referencia docs/backend/INTEGRACIONES/CENDOJ.md."
+        },
+        {
+          "id": 37,
+          "title": "Alertas Legislativas",
+          "prompt": "Sistema de alertas: crear alerta por palabras clave, comprobar nuevas normas, enviar notificación. Job de comprobación diaria."
+        }
+      ]
+    },
+    {
+      "phase": 12,
+      "name": "Integraciones Externas",
+      "prompts": [
+        {
+          "id": 38,
+          "title": "Microsoft 365",
+          "prompt": "Crea integración Microsoft Graph API: OAuth, calendar, email, OneDrive. Referencia docs/backend/INTEGRACIONES/MICROSOFT.md."
+        },
+        {
+          "id": 39,
+          "title": "Google Workspace",
+          "prompt": "Crea integración Google API: OAuth, Calendar, Gmail, Drive. Referencia docs/backend/INTEGRACIONES/GOOGLE.md."
+        },
+        {
+          "id": 40,
+          "title": "Registros Públicos",
+          "prompt": "Integración con registros públicos: Registro Civil, Catastro, Registro de la Propiedad. Referencia docs/backend/INTEGRACIONES/REGISTROS.md."
+        }
+      ]
+    },
+    {
+      "phase": 13,
+      "name": "Colas y Procesamiento",
+      "prompts": [
+        {
+          "id": 41,
+          "title": "Cola de Emails",
+          "prompt": "Implementa cola Bull para emails: sendEmail job, retry logic, templates. Referencia docs/backend/12_COLAS.md."
+        },
+        {
+          "id": 42,
+          "title": "Procesamiento OCR",
+          "prompt": "Cola para OCR: procesar documento, extraer texto, guardar. Tesseract o AWS Textract."
+        },
+        {
+          "id": 43,
+          "title": "Generación Informes",
+          "prompt": "Cola para informes: generar PDF, guardar, notificar usuario. Plantillas Jinja2 o similar."
+        }
+      ]
+    },
+    {
+      "phase": 14,
+      "name": "WebSockets y Tiempo Real",
+      "prompts": [
+        {
+          "id": 44,
+          "title": "WebSockets",
+          "prompt": "Implementa WebSocket gateway: notificaciones, updates en tiempo real. Referencia docs/backend/10_WEBSOCKETS.md."
+        }
+      ]
+    },
+    {
+      "phase": 15,
+      "name": "Testing",
+      "prompts": [
+        {
+          "id": 45,
+          "title": "Tests Unitarios",
+          "prompt": "Crea tests unitarios con Jest para servicios principales: AuthService, UsuarioService, ClienteService, ExpedienteService. Mocks con TestingModule. Coverage > 80%. Referencia docs/backend/15_TESTING.md."
+        }
+      ]
+    }
+  ]
+}

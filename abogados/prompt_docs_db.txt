@@ -1,0 +1,27 @@
+Crea la documentación de base de datos completa en /tmp/derecho/abogados/docs/backend/DATABASE/ con los siguientes archivos:
+
+1. **06_DOCUMENTOS.md** - Tabla documentos:
+   - Schema SQL completo
+   - Relaciones con otras tablas
+   - Índices
+   - Enum de tipos
+   - Notas y consideraciones
+
+2. **07_OFICIO.md** - Tablas de turnos de oficio:
+   - Schema SQL completo (turnos, guardias, liquidaciones)
+   - Relaciones
+   - Índices
+   - Enums
+
+3. **08_CRM.md** - Tablas CRM:
+   - Schema SQL completo (leads, oportunidades, actividades)
+   - Pipeline
+   - Estados
+   - Relaciones
+
+4. **09_LOPDGDD.md** - Tablas compliance:
+   - Schema SQL (RAT, consentimientos, derechos, brechas)
+   - Enums
+   - Auditoría
+
+Cada archivo debe incluir SQL completo, explicaciones y ejemplos.

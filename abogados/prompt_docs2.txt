@@ -1,0 +1,32 @@
+Crea la documentación completa del backend en /tmp/derecho/abogados/docs/backend/ con los siguientes archivos:
+
+1. **09_SERVICIOS.md** - Servicios y lógica de negocio:
+   - Servicios principales (Auth, Expedientes, Clientes, Facturas, etc.)
+   - Patrón Service Layer
+   - Inyección de dependencias
+   - Transacciones
+   - Eventos del dominio
+   - Código de ejemplo
+
+2. **10_WEBSOCKETS.md** - WebSockets y tiempo real:
+   - Configuración Socket.io
+   - Eventos en tiempo real
+   - Notificaciones push
+   - Chat
+   - Actualizaciones de estado
+
+3. **11_CACHING.md** - Estrategias de caché:
+   - Redis setup
+   - Patterns (cache-aside, write-through)
+   - TTL por tipo de dato
+   - Invalidation
+   - Código
+
+4. **12_COLAS.md** - Colas de procesamiento:
+   - Bull/RabbitMQ setup
+   - Procesamiento de emails
+   - OCR de documentos
+   - Generación de informes
+   - Retry logic
+
+Cada archivo debe incluir código TypeScript profesional y ejemplos prácticos.

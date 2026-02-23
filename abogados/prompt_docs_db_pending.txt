@@ -1,0 +1,20 @@
+Crea la documentación de base de datos completa en /tmp/derecho/abogados/docs/backend/DATABASE/ con los siguientes archivos:
+
+1. **08_CRM.md** - Tablas CRM completo:
+   - Schema SQL para leads, oportunidades, contactos, actividades
+   - Pipeline y estados
+   - Relaciones con clientes
+   - Índices optimizados
+
+2. **09_LOPDGDD.md** - Tablas compliance:
+   - Schema SQL completo (RAT, consentimientos, derechos ARCO, brechas, EIPD)
+   - Enums de tipos
+   - Auditoría de compliance
+
+3. **10_AUDITORIA.md** - Tablas de auditoría:
+   - Schema SQL para logs de auditoría
+   - Cambios en entidades
+   - Retención de logs
+   - Tabla de auditoría general
+
+Cada archivo debe incluir SQL completo, explicaciones detalladas y ejemplos.
