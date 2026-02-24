@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
+import VerifyEmail from './pages/auth/VerifyEmail'
 
 // M1 - Core Legal
 import Expedientes from './pages/core/Expedientes'
@@ -9,11 +12,18 @@ import ExpedienteDetail from './pages/ExpedienteDetail'
 import Calendario from './pages/core/Calendario'
 import Audiencias from './pages/core/Audiencias'
 import Prescripciones from './pages/core/Prescripciones'
+import CoreDashboard from './pages/core/CoreDashboard'
+import ExpedienteNuevo from './pages/core/ExpedienteNuevo'
+import PlazosProcesales from './pages/core/PlazosProcesales'
 
 // M2 - Gestión Documental
 import Biblioteca from './pages/documentos/Biblioteca'
+import DocumentoDetalle from './pages/documentos/DocumentoDetalle'
 import Buscar from './pages/documentos/Buscar'
+import BusquedaAvanzada from './pages/documentos/BusquedaAvanzada'
 import OCR from './pages/documentos/OCR'
+import OCRProcesar from './pages/documentos/OCRProcesar'
+import OCRResultados from './pages/documentos/OCRResultados'
 
 // M3 - Finanzas
 import Facturacion from './pages/finanzas/Facturacion'
@@ -25,6 +35,8 @@ import Rentabilidad from './pages/finanzas/Rentabilidad'
 import Cobranza from './pages/cobranza/Cobranza'
 import CobranzaProveedores from './pages/cobranza/Proveedores'
 import CobranzaConfig from './pages/cobranza/Config'
+import Vencimientos from './pages/cobranza/Vencimientos'
+import GestionCobros from './pages/cobranza/GestionCobros'
 
 // M5 - Tiempo & Tareas
 import Tareas from './pages/tiempo/Tareas'
@@ -92,19 +104,29 @@ function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
 
         {/* M1 - Core Legal */}
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/core/dashboard" element={<CoreDashboard />} />
         <Route path="/core/expedientes" element={<Expedientes />} />
+        <Route path="/core/expedientes/nuevo" element={<ExpedienteNuevo />} />
         <Route path="/core/expedientes/:id" element={<ExpedienteDetail />} />
         <Route path="/core/calendario" element={<Calendario />} />
         <Route path="/core/audiencias" element={<Audiencias />} />
         <Route path="/core/prescripciones" element={<Prescripciones />} />
+        <Route path="/core/plazos" element={<PlazosProcesales />} />
 
         {/* M2 - Gestión Documental */}
         <Route path="/documentos/biblioteca" element={<Biblioteca />} />
+        <Route path="/documentos/biblioteca/:id" element={<DocumentoDetalle />} />
         <Route path="/documentos/buscar" element={<Buscar />} />
+        <Route path="/documentos/buscar/avanzada" element={<BusquedaAvanzada />} />
         <Route path="/documentos/ocr" element={<OCR />} />
+        <Route path="/documentos/ocr/procesar" element={<OCRProcesar />} />
+        <Route path="/documentos/ocr/resultados" element={<OCRResultados />} />
 
         {/* M3 - Finanzas */}
         <Route path="/finanzas/facturacion" element={<Facturacion />} />
@@ -114,6 +136,8 @@ function App() {
 
         {/* M4 - Cobranza */}
         <Route path="/cobranza/dashboard" element={<Cobranza />} />
+        <Route path="/cobranza/gestion" element={<GestionCobros />} />
+        <Route path="/cobranza/vencimientos" element={<Vencimientos />} />
         <Route path="/cobranza/proveedores" element={<CobranzaProveedores />} />
         <Route path="/cobranza/config" element={<CobranzaConfig />} />
 

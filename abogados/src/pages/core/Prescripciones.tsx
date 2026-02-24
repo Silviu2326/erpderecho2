@@ -1,513 +1,370 @@
-// M1 - Core Legal: Prescripciones MEJORADA
-// Gestión de plazos de prescripción con UX/UI avanzada
-
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
-  Clock, AlertTriangle, CheckCircle, XCircle, 
-  Calendar, Filter, Search, FolderOpen, ChevronRight,
-  Plus, Edit2, Trash2, Eye, Bell, Download, RefreshCw
+  Clock, AlertTriangle, CheckCircle, Calendar,
+  Search, Plus, Loader2, FileText, ArrowUpRight
 } from 'lucide-react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { useDebounce } from '@/hooks/useDebounce';
-import { useToast } from '@/components/ui/Toast';
-import { TableSkeleton, StatsSkeleton, CardSkeleton } from '@/components/ui/Skeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
-import { ErrorState } from '@/components/ui/ErrorState';
-import { LoadingOverlay } from '@/components/ui/Loading';
-import { Button } from '@/components/ui/Button';
-import { Input, Select, Textarea } from '@/components/ui/Form';
-import { Card, Badge, Tabs, Progress } from '@/components/ui';
-import { Modal } from '@/components/ui/Modal';
-import { usePagination } from '@/hooks/usePagination';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  calendarioService,
+  type Evento
+} from '@/services';
 
-// Datos mock mejorados
-const prescripcionesMock = [
-  { id: 'EXP-2024-001', caso: 'Demanda laboral - García', tipo: 'laboral', fechaInicio: '2024-01-15', fechaPrescripcion: '2027-01-15', diasRestantes: 365, estado: 'activa', abogado: 'María González', prioridad: 'media', recordatorio: true },
-  { id: 'EXP-2024-002', caso: 'Divorcio - Martínez', tipo: 'familia', fechaInicio: '2024-03-10', fechaPrescripcion: '2026-03-10', diasRestantes: 20, estado: 'peligro', abogado: 'Carlos Ruiz', prioridad: 'alta', recordatorio: true },
-  { id: 'EXP-2024-003', caso: 'Reclamación deuda - TechCorp', tipo: 'civil', fechaInicio: '2024-06-20', fechaPrescripcion: '2026-06-20', diasRestantes: 120, estado: 'activa', abogado: 'Ana López', prioridad: 'baja', recordatorio: false },
-  { id: 'EXP-2024-004', caso: 'Accidente tráfico - Sánchez', tipo: 'penal', fechaInicio: '2023-11-01', fechaPrescripcion: '2025-11-01', diasRestantes: -111, estado: 'prescrita', abogado: 'María González', prioridad: 'alta', recordatorio: false },
-  { id: 'EXP-2024-005', caso: 'Despido - Rodríguez', tipo: 'laboral', fechaInicio: '2025-01-20', fechaPrescripcion: '2028-01-20', diasRestantes: 700, estado: 'activa', abogado: 'Carlos Ruiz', prioridad: 'media', recordatorio: true },
-  { id: 'EXP-2024-006', caso: 'Reclamación alquiler', tipo: 'civil', fechaInicio: '2025-02-15', fechaPrescripcion: '2027-02-15', diasRestantes: 360, estado: 'activa', abogado: 'Ana López', prioridad: 'baja', recordatorio: false },
-  { id: 'EXP-2024-007', caso: 'Separación - López', tipo: 'familia', fechaInicio: '2025-06-01', fechaPrescripcion: '2027-06-01', diasRestantes: 465, estado: 'activa', abogado: 'Javier M.', prioridad: 'media', recordatorio: true },
-  { id: 'EXP-2024-008', caso: 'Demanda mercantil', tipo: 'civil', fechaInicio: '2025-08-10', fechaPrescripcion: '2027-08-10', diasRestantes: 540, estado: 'activa', abogado: 'María González', prioridad: 'baja', recordatorio: false },
-];
-
-const tiposExpediente = ['todos', 'civil', 'penal', 'laboral', 'familia', 'administrativo'];
-const estados = ['todos', 'activa', 'peligro', 'prescrita'];
-const prioridades = ['todos', 'alta', 'media', 'baja'];
-const abogados = ['todos', 'María González', 'Carlos Ruiz', 'Ana López', 'Javier M.'];
+interface Toast {
+  id: number;
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
 
 export default function Prescripciones() {
   // Estados
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterTipo, setFilterTipo] = useLocalStorage('prescripciones-tipo', 'todos');
-  const [filterEstado, setFilterEstado] = useLocalStorage('prescripciones-estado', 'todos');
-  const [filterPrioridad, setFilterPrioridad] = useLocalStorage('prescripciones-prioridad', 'todos');
-  const [filterAbogado, setFilterAbogado] = useLocalStorage('prescripciones-abogado', 'todos');
-  const [alertasActivas, setAlertasActivas] = useState(true);
-  const [isLoading, setIsLoading] = useState(true);
+  const [plazos, setPlazos] = useState<Evento[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [selectedPrescripcion, setSelectedPrescripcion] = useState<typeof prescripcionesMock[0] | null>(null);
-  const [activeTab, setActiveTab] = useState('todas');
-  const [showFilters, setShowFilters] = useState(false);
-  
-  const debouncedSearch = useDebounce(searchTerm, 300);
-  const { showToast } = useToast();
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Pagination
-  const {
-    currentData: paginatedData,
-    currentPage,
-    totalPages,
-    goToPage,
-    hasNextPage,
-    hasPrevPage,
-    startIndex,
-    endIndex,
-    totalItems
-  } = usePagination({ data: prescripcionesMock });
-
-  // Simular carga
+  // Cargar plazos
   useEffect(() => {
-    setIsLoading(true);
-    const timer = setTimeout(() => setIsLoading(false), 1200);
-    return () => clearTimeout(timer);
+    cargarPlazos();
   }, []);
 
-  // Filtrar datos
-  const filteredData = prescripcionesMock.filter(item => {
-    const matchesSearch = item.caso.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
-                         item.id.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-                         item.abogado.toLowerCase().includes(debouncedSearch.toLowerCase());
-    const matchesTipo = filterTipo === 'todos' || item.tipo === filterTipo;
-    const matchesEstado = filterEstado === 'todos' || item.estado === filterEstado;
-    const matchesPrioridad = filterPrioridad === 'todos' || item.prioridad === filterPrioridad;
-    const matchesAbogado = filterAbogado === 'todos' || item.abogado === filterAbogado;
-    return matchesSearch && matchesTipo && matchesEstado && matchesPrioridad && matchesAbogado;
+  const cargarPlazos = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Calcular rango de fechas (próximos 180 días)
+      const hoy = new Date();
+      const fechaDesde = hoy.toISOString().split('T')[0];
+      
+      const fechaHasta = new Date();
+      fechaHasta.setDate(hoy.getDate() + 180);
+      
+      const data = await calendarioService.listarPlazos(
+        fechaDesde,
+        fechaHasta.toISOString().split('T')[0]
+      );
+      
+      setPlazos(data);
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar plazos');
+      showToast('Error al cargar plazos', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Toast helper
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3000);
+  };
+
+  // Calcular días restantes
+  const getDiasRestantes = (fechaFin: string): number => {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const fecha = new Date(fechaFin);
+    fecha.setHours(0, 0, 0, 0);
+    const diffTime = fecha.getTime() - hoy.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  // Determinar estado del plazo
+  const getEstadoPlazo = (diasRestantes: number): { estado: string; color: string; icon: any } => {
+    if (diasRestantes < 0) {
+      return { estado: 'Vencido', color: 'bg-red-500', icon: AlertTriangle };
+    } else if (diasRestantes <= 7) {
+      return { estado: 'Crítico', color: 'bg-red-500', icon: AlertTriangle };
+    } else if (diasRestantes <= 30) {
+      return { estado: 'Urgente', color: 'bg-amber-500', icon: Clock };
+    } else {
+      return { estado: 'Activo', color: 'bg-emerald-500', icon: CheckCircle };
+    }
+  };
+
+  // Filtrar plazos
+  const filteredPlazos = plazos.filter(plazo =>
+    plazo.titulo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    plazo.descripcion?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    plazo.expediente?.numeroExpediente.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Ordenar por días restantes (más urgentes primero)
+  const sortedPlazos = [...filteredPlazos].sort((a, b) => {
+    const diasA = getDiasRestantes(a.fechaInicio);
+    const diasB = getDiasRestantes(b.fechaInicio);
+    return diasA - diasB;
   });
 
-  // Obtener datos según tab
-  const getDataByTab = () => {
-    switch (activeTab) {
-      case 'activas': return filteredData.filter(p => p.estado === 'activa');
-      case 'peligro': return filteredData.filter(p => p.estado === 'peligro');
-      case 'prescritas': return filteredData.filter(p => p.estado === 'prescrita');
-      default: return filteredData;
-    }
-  };
-
-  const displayData = getDataByTab();
-
-  // Stats
-  const prescripcionesActivas = prescripcionesMock.filter(p => p.estado === 'activa').length;
-  const prescripcionesPeligro = prescripcionesMock.filter(p => p.estado === 'peligro').length;
-  const prescripcionesPrescritas = prescripcionesMock.filter(p => p.estado === 'prescrita').length;
-  const peligroCritico = prescripcionesMock.filter(p => p.diasRestantes > 0 && p.diasRestantes <= 30).length;
-
-  // Handlers
-  const handleRefresh = () => {
-    setIsLoading(true);
-    showToast('Actualizando...', 'info');
-    setTimeout(() => {
-      setIsLoading(false);
-      showToast('Datos actualizados', 'success');
-    }, 1500);
-  };
-
-  const handleNew = () => {
-    setSelectedPrescripcion(null);
-    setShowModal(true);
-  };
-
-  const handleEdit = (item: typeof prescripcionesMock[0]) => {
-    setSelectedPrescripcion(item);
-    setShowModal(true);
-  };
-
-  const handleDelete = (id: string) => {
-    showToast('Prescripción eliminada', 'success');
-  };
-
-  const handleExportPDF = () => {
-    showToast('Generando PDF...', 'info');
-    // Simular generación PDF
-    setTimeout(() => {
-      showToast('PDF descargado correctamente', 'success');
-    }, 1500);
-  };
-
-  const handleExportExcel = () => {
-    showToast('Generando Excel...', 'info');
-    // Simular generación Excel
-    setTimeout(() => {
-      showToast('Excel descargado correctamente', 'success');
-    }, 1500);
-  };
-
-  const handleToggleAlertas = () => {
-    setAlertasActivas(!alertasActivas);
-    showToast(alertasActivas ? 'Alertas desactivadas' : 'Alertas activadas', 'info');
-  };
-
-  // Verificar alertas automáticas
-  useEffect(() => {
-    if (!alertasActivas) return;
-    
-    const prescripcionesPeligro = filteredData.filter(p => p.diasRestantes > 0 && p.diasRestantes <= 30);
-    
-    if (prescripcionesPeligro.length > 0) {
-      showToast(`⚠️ Tienes ${prescripcionesPeligro.length} prescripciones en peligro`, 'warning');
-    }
-  }, [filteredData, alertasActivas]);
-
-  const handleToggleRecordatorio = (id: string) => {
-    showToast('Recordatorio actualizado', 'success');
-  };
-
-  // Badge variants
-  const getEstadoBadge = (estado: string) => {
-    switch (estado) {
-      case 'activa': return 'success';
-      case 'peligro': return 'warning';
-      case 'prescrita': return 'error';
-      default: return 'default';
-    }
-  };
-
-  const getPrioridadBadge = (prioridad: string) => {
-    switch (prioridad) {
-      case 'alta': return 'error';
-      case 'media': return 'warning';
-      case 'baja': return 'info';
-      default: return 'default';
-    }
-  };
+  // Separar por estado
+  const plazosCriticos = sortedPlazos.filter(p => getDiasRestantes(p.fechaInicio) <= 7);
+  const plazosProximos = sortedPlazos.filter(p => {
+    const dias = getDiasRestantes(p.fechaInicio);
+    return dias > 7 && dias <= 30;
+  });
+  const plazosFuturos = sortedPlazos.filter(p => getDiasRestantes(p.fechaInicio) > 30);
 
   return (
-    <AppLayout title="Prescripciones" subtitle="Gestión de plazos de prescripción">
-    <div className="p-6 space-y-6">
-      {/* Breadcrumbs */}
-      <Breadcrumbs
-        items={[
-          { label: 'Core Legal', path: '/core/expedientes' },
-          { label: 'Prescripciones' }
-        ]}
-      />
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-theme-primary">Prescripciones</h1>
-          <p className="text-theme-secondary">Control de plazos de prescripción</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={handleExportPDF}>
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
-          </Button>
-          <Button variant="secondary" onClick={handleRefresh}>
-            <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
-          <Button onClick={handleNew}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nueva
-          </Button>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <Tabs
-        tabs={[
-          { id: 'todas', label: 'Todas', badge: prescripcionesMock.length },
-          { id: 'activas', label: 'Activas', badge: prescripcionesActivas },
-          { id: 'peligro', label: 'En peligro', badge: prescripcionesPeligro },
-          { id: 'prescritas', label: 'Prescritas', badge: prescripcionesPrescritas }
-        ]}
-        activeTab={activeTab}
-        onChange={setActiveTab}
-      />
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card hover>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-              <CheckCircle className="w-6 h-6 text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-theme-primary">{prescripcionesActivas}</p>
-              <p className="text-sm text-theme-secondary">Activas</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card hover>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center">
-              <AlertTriangle className="w-6 h-6 text-amber-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-theme-primary">{prescripcionesPeligro}</p>
-              <p className="text-sm text-theme-secondary">En peligro</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card hover>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
-              <XCircle className="w-6 h-6 text-red-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-theme-primary">{prescripcionesPrescritas}</p>
-              <p className="text-sm text-theme-secondary">Prescritas</p>
-            </div>
-          </div>
-        </Card>
-
-        <Card hover>
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-              <Bell className="w-6 h-6 text-blue-400" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-theme-primary">{peligroCritico}</p>
-              <p className="text-sm text-theme-secondary">Críticas (&lt;30 días)</p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex-1 min-w-[200px]">
-            <Input
-              placeholder="Buscar por caso, expediente o abogado..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              leftIcon={<Search className="w-4 h-4" />}
-            />
-          </div>
-          
-          <Select
-            value={filterTipo}
-            onChange={(e) => setFilterTipo(e.target.value)}
-            options={tiposExpediente.map(t => ({ value: t, label: t === 'todos' ? 'Todos los tipos' : t }))}
-          />
-          
-          <Select
-            value={filterEstado}
-            onChange={(e) => setFilterEstado(e.target.value)}
-            options={estados.map(e => ({ value: e, label: e === 'todos' ? 'Todos los estados' : e }))}
-          />
-          
-          <Button 
-            variant={showFilters ? 'primary' : 'secondary'}
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="w-4 h-4 mr-2" />
-            Filtros
-          </Button>
-        </div>
-      </Card>
-
-      {/* Loading State */}
-      {isLoading ? (
-        <StatsSkeleton />
-      ) : displayData.length === 0 ? (
-        <EmptyState
-          icon={Clock}
-          title="No se encontraron prescripciones"
-          description="No hay prescripciones que coincidan con los filtros aplicados"
-          action={{ label: "Limpiar filtros", onClick: () => {
-            setSearchTerm('');
-            setFilterTipo('todos');
-            setFilterEstado('todos');
-            setFilterPrioridad('todos');
-          }}}
-        />
-      ) : (
-        <>
-          {/* Table */}
-          <Card padding="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-theme-tertiary/50">
-                  <tr>
-                    <th className="text-left p-4 text-sm font-medium text-theme-secondary">Expediente</th>
-                    <th className="text-left p-4 text-sm font-medium text-theme-secondary">Caso</th>
-                    <th className="text-left p-4 text-sm font-medium text-theme-secondary">Tipo</th>
-                    <th className="text-left p-4 text-sm font-medium text-theme-secondary">Abogado</th>
-                    <th className="text-left p-4 text-sm font-medium text-theme-secondary">Vencimiento</th>
-                    <th className="text-center p-4 text-sm font-medium text-theme-secondary">Días restantes</th>
-                    <th className="text-center p-4 text-sm font-medium text-theme-secondary">Estado</th>
-                    <th className="text-center p-4 text-sm font-medium text-theme-secondary">Prioridad</th>
-                    <th className="text-center p-4 text-sm font-medium text-theme-secondary">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayData.map((item, index) => (
-                    <motion.tr
-                      key={item.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.03 }}
-                      className="border-t border-theme hover:bg-theme-tertiary/30"
-                    >
-                      <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <FolderOpen className="w-4 h-4 text-theme-muted" />
-                          <span className="font-medium text-theme-primary">{item.id}</span>
-                        </div>
-                      </td>
-                      <td className="p-4 text-theme-primary max-w-[200px] truncate">{item.caso}</td>
-                      <td className="p-4">
-                        <Badge variant="default">{item.tipo}</Badge>
-                      </td>
-                      <td className="p-4 text-theme-secondary">{item.abogado}</td>
-                      <td className="p-4 text-theme-secondary">
-                        {new Date(item.fechaPrescripcion).toLocaleDateString('es-ES')}
-                      </td>
-                      <td className="p-4 text-center">
-                        <span className={`
-                          font-bold ${item.diasRestantes < 0 ? 'text-red-400' : 
-                            item.diasRestantes < 30 ? 'text-red-400' : 
-                            item.diasRestantes < 90 ? 'text-amber-400' : 'text-emerald-400'}
-                        `}>
-                          {item.diasRestantes < 0 ? `Hace ${Math.abs(item.diasRestantes)} días` : `${item.diasRestantes} días`}
-                        </span>
-                      </td>
-                      <td className="p-4 text-center">
-                        <Badge variant={getEstadoBadge(item.estado)}>
-                          {item.estado}
-                        </Badge>
-                      </td>
-                      <td className="p-4 text-center">
-                        <Badge variant={getPrioridadBadge(item.prioridad)}>
-                          {item.prioridad}
-                        </Badge>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => handleToggleRecordatorio(item.id)}>
-                            <Bell className={`w-4 h-4 ${item.recordatorio ? 'text-accent' : 'text-theme-muted'}`} />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleEdit(item)}>
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(item.id)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-
-          {/* Pagination Info */}
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-theme-secondary">
-              Mostrando {displayData.length} de {displayData.length} prescripciones
+    <AppLayout>
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-theme-primary">Plazos y Prescripciones</h1>
+            <p className="text-theme-secondary">
+              {plazosCriticos.length} críticos • {plazosProximos.length} próximos • {plazosFuturos.length} futuros
             </p>
-            <div className="flex gap-2">
-              <Button 
-                variant="secondary" 
-                size="sm"
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={!hasPrevPage}
-              >
-                Anterior
-              </Button>
-              <span className="px-4 py-2 text-theme-secondary">
-                {currentPage} / {Math.ceil(displayData.length / 10)}
-              </span>
-              <Button 
-                variant="secondary" 
-                size="sm"
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={!hasNextPage}
-              >
-                Siguiente
-              </Button>
-            </div>
           </div>
-        </>
-      )}
-
-      {/* Modal para crear/editar */}
-      <Modal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        title={selectedPrescripcion ? 'Editar Prescripción' : 'Nueva Prescripción'}
-        size="lg"
-      >
-        <div className="space-y-4">
-          <Input
-            label="Expediente"
-            placeholder="EXP-2024-XXX"
-            defaultValue={selectedPrescripcion?.id}
-          />
-          <Input
-            label="Caso"
-            placeholder="Nombre del caso"
-            defaultValue={selectedPrescripcion?.caso}
-          />
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Tipo"
-              defaultValue={selectedPrescripcion?.tipo || 'civil'}
-              options={tiposExpediente.filter(t => t !== 'todos').map(t => ({ value: t, label: t }))}
-            />
-            <Select
-              label="Prioridad"
-              defaultValue={selectedPrescripcion?.prioridad || 'media'}
-              options={[
-                { value: 'alta', label: 'Alta' },
-                { value: 'media', label: 'Media' },
-                { value: 'baja', label: 'Baja' }
-              ]}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Fecha de inicio"
-              type="date"
-              defaultValue={selectedPrescripcion?.fechaInicio}
-            />
-            <Input
-              label="Fecha de prescripción"
-              type="date"
-              defaultValue={selectedPrescripcion?.fechaPrescripcion}
-            />
-          </div>
-          <Textarea
-            label="Notas"
-            placeholder="Notas adicionales..."
-            rows={3}
-          />
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="secondary" onClick={() => setShowModal(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={() => {
-              showToast(selectedPrescripcion ? 'Prescripción actualizada' : 'Prescripción creada', 'success');
-              setShowModal(false);
-            }}>
-              {selectedPrescripcion ? 'Guardar' : 'Crear'}
-            </Button>
-          </div>
+          
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => showToast('Función de creación en desarrollo', 'info')}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Nuevo Plazo
+          </motion.button>
         </div>
-      </Modal>
-    </div>
+
+        {/* Búsqueda */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-theme-tertiary" />
+          <input
+            type="text"
+            placeholder="Buscar plazos..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-theme-secondary border border-theme rounded-lg text-theme-primary placeholder-theme-tertiary focus:outline-none focus:border-amber-500"
+          />
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <p className="text-red-400">{error}</p>
+            <button
+              onClick={cargarPlazos}
+              className="ml-auto px-3 py-1 text-sm text-red-500 hover:text-red-400 underline"
+            >
+              Reintentar
+            </button>
+          </div>
+        )}
+
+        {/* Loading */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+          </div>
+        )}
+
+        {/* Contenido */}
+        {!loading && !error && (
+          <div className="space-y-6">
+            {/* Plazos críticos */}
+            {plazosCriticos.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <AlertTriangle className="w-5 h-5 text-red-500" />
+                  <h2 className="text-lg font-semibold text-red-500">Plazos Críticos</h2>
+                  <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">{plazosCriticos.length}</span>
+                </div>
+                
+                <div className="space-y-3">
+                  {plazosCriticos.map((plazo) => {
+                    const diasRestantes = getDiasRestantes(plazo.fechaInicio);
+                    const { estado, color, icon: Icon } = getEstadoPlazo(diasRestantes);
+                    
+                    return (
+                      <motion.div
+                        key={plazo.id}
+                        whileHover={{ scale: 1.01 }}
+                        className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Clock className="w-5 h-5 text-red-500" />
+                              <h3 className="font-semibold text-theme-primary">{plazo.titulo}</h3>
+                              <span className={`px-2 py-0.5 text-xs text-white rounded-full ${color}`}>
+                                {diasRestantes < 0 ? `Vencido hace ${Math.abs(diasRestantes)} días` : `${diasRestantes} días restantes`}
+                              </span>
+                            </div>
+                            
+                            {plazo.descripcion && (
+                              <p className="text-theme-secondary text-sm mb-3">{plazo.descripcion}</p>
+                            )}
+                            
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-theme-tertiary">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                Vence: {new Date(plazo.fechaInicio).toLocaleDateString('es-ES')}
+                              </span>
+                              
+                              {plazo.expediente && (
+                                <span className="flex items-center gap-1">
+                                  <FileText className="w-4 h-4" />
+                                  {plazo.expediente.numeroExpediente}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <ArrowUpRight className="w-5 h-5 text-red-500" />
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Plazos próximos */}
+            {plazosProximos.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Clock className="w-5 h-5 text-amber-500" />
+                  <h2 className="text-lg font-semibold text-amber-500">Plazos Próximos</h2>
+                  <span className="px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full">{plazosProximos.length}</span>
+                </div>
+                
+                <div className="space-y-3">
+                  {plazosProximos.map((plazo) => {
+                    const diasRestantes = getDiasRestantes(plazo.fechaInicio);
+                    
+                    return (
+                      <motion.div
+                        key={plazo.id}
+                        whileHover={{ scale: 1.01 }}
+                        className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Clock className="w-5 h-5 text-amber-500" />
+                              <h3 className="font-medium text-theme-primary">{plazo.titulo}</h3>
+                              <span className="px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full">
+                                {diasRestantes} días
+                              </span>
+                            </div>
+                            
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-theme-tertiary">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                {new Date(plazo.fechaInicio).toLocaleDateString('es-ES')}
+                              </span>
+                              
+                              {plazo.expediente && (
+                                <span className="flex items-center gap-1">
+                                  <FileText className="w-4 h-4" />
+                                  {plazo.expediente.numeroExpediente}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <ArrowUpRight className="w-5 h-5 text-amber-500" />
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Plazos futuros */}
+            {plazosFuturos.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <CheckCircle className="w-5 h-5 text-emerald-500" />
+                  <h2 className="text-lg font-semibold text-emerald-500">Plazos Futuros</h2>
+                  <span className="px-2 py-0.5 bg-emerald-500 text-white text-xs rounded-full">{plazosFuturos.length}</span>
+                </div>
+                
+                <div className="space-y-3">
+                  {plazosFuturos.map((plazo) => {
+                    const diasRestantes = getDiasRestantes(plazo.fechaInicio);
+                    
+                    return (
+                      <div
+                        key={plazo.id}
+                        className="p-4 bg-theme-secondary rounded-xl border border-theme"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Clock className="w-5 h-5 text-theme-tertiary" />
+                              <h3 className="font-medium text-theme-primary">{plazo.titulo}</h3>
+                              <span className="px-2 py-0.5 bg-emerald-500 text-white text-xs rounded-full">
+                                {diasRestantes} días
+                              </span>
+                            </div>
+                            
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-theme-tertiary">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-4 h-4" />
+                                {new Date(plazo.fechaInicio).toLocaleDateString('es-ES')}
+                              </span>
+                              
+                              {plazo.expediente && (
+                                <span className="flex items-center gap-1">
+                                  <FileText className="w-4 h-4" />
+                                  {plazo.expediente.numeroExpediente}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Sin plazos */}
+            {sortedPlazos.length === 0 && (
+              <div className="text-center py-12 bg-theme-secondary rounded-xl">
+                <Clock className="w-12 h-12 text-theme-tertiary mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-theme-primary mb-2">No hay plazos registrados</h3>
+                <p className="text-theme-secondary">Crea un nuevo plazo para comenzar</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Toasts */}
+      <div className="fixed bottom-6 right-6 space-y-2 z-50">
+        {toasts.map((toast) => (
+          <motion.div
+            key={toast.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
+              toast.type === 'success' 
+                ? 'bg-emerald-500 text-white' 
+                : toast.type === 'error'
+                ? 'bg-red-500 text-white'
+                : 'bg-amber-500 text-white'
+            }`}
+          >
+            {toast.type === 'success' ? <CheckCircle className="w-4 h-4" /> 
+              : toast.type === 'error' ? <AlertTriangle className="w-4 h-4" /> 
+              : <Clock className="w-4 h-4" />}
+            <span>{toast.message}</span>
+          </motion.div>
+        ))}
+      </div>
     </AppLayout>
   );
 }

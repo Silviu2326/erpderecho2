@@ -398,7 +398,7 @@ El tratamiento es necesario para la ejecución del contrato en el que el interes
 Los datos se conservarán durante ${plazosConservacion} y, posteriormente, durante los plazos legalmente establecidos.
 
 5. DERECHOS
-El cliente puede ejercer sus derechos (${derechos.map(d => categoriasDerechos.find(c => c.id === d)?.label).filter(Boolean).join(', '})}) dirigiéndose a ${emailEmpresa}.
+El cliente puede ejercer sus derechos (${derechos.map(d => categoriasDerechos.find(c => c.id === d)?.label).filter(Boolean).join(', '}) dirigiéndose a ${emailEmpresa}.
 
 6. CONSECUENCIAS DE NO PROPORCIONAR LOS DATOS
 La no comunicación de los datos personales necesarios impedirá la formalización y/o ejecución del contrato.

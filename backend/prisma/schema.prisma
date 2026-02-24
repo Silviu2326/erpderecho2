@@ -137,6 +137,11 @@ model User {
   favoritos     Favorito[]
   alertas       Alerta[]
   integraciones Integracion[]
+  
+  // Relaciones para Finanzas
+  gastos        Gasto[]
+  gastosAprobados Gasto[] @relation("GastoAprobadoPor")
+  asientos      AsientoContable[]
 
   @@index([email], name: "idx_usuario_email")
   @@index([rol], name: "idx_usuario_rol")
@@ -724,4 +729,212 @@ model Prediccion {
   @@index([tipoPrediccion], name: "idx_prediccion_tipo")
   @@index([createdAt], name: "idx_prediccion_fecha")
   @@map("prediccion")
+}
+
+// ============================================================
+// MODELOS PARA MÓDULO M3 - FINANZAS (Gastos y Contabilidad)
+// ============================================================
+
+enum EstadoGasto {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+  PAGADO
+  CONTABILIZADO
+}
+
+enum TipoGasto {
+  OPERATIVO
+  PROFESIONAL
+  ADMINISTRATIVO
+  REEMBOLSABLE
+  CASO
+}
+
+model Gasto {
+  id              String      @id @default(uuid())
+  concepto        String
+  descripcion     String?     @db.Text
+  importe         Float
+  importeIVA      Float?      @map("importe_iva")
+  tipo            TipoGasto   @default(OPERATIVO)
+  estado          EstadoGasto @default(PENDIENTE)
+  
+  fechaGasto      DateTime    @map("fecha_gasto")
+  fechaPago       DateTime?   @map("fecha_pago")
+  
+  // Comprobantes y documentación
+  comprobanteUrl  String?     @map("comprobante_url")
+  numeroFactura   String?     @map("numero_factura")
+  
+  // Reembolso
+  reembolsable    Boolean     @default(false)
+  fechaReembolso  DateTime?   @map("fecha_reembolso")
+  
+  deletedAt       DateTime?   @map("deleted_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  
+  // Relaciones
+  usuarioId       String      @map("usuario_id")
+  usuario         User        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  proveedorId     String?     @map("proveedor_id")
+  proveedor       Proveedor?  @relation(fields: [proveedorId], references: [id], onDelete: SetNull)
+  
+  expedienteId    String?     @map("expediente_id")
+  expediente      Expediente? @relation(fields: [expedienteId], references: [id], onDelete: SetNull)
+  
+  aprobadoPorId   String?     @map("aprobado_por_id")
+  aprobadoPor     User?       @relation("GastoAprobadoPor", fields: [aprobadoPorId], references: [id], onDelete: SetNull)
+  
+  @@index([usuarioId], name: "idx_gasto_usuario")
+  @@index([estado], name: "idx_gasto_estado")
+  @@index([tipo], name: "idx_gasto_tipo")
+  @@index([fechaGasto], name: "idx_gasto_fecha")
+  @@index([proveedorId], name: "idx_gasto_proveedor")
+  @@map("gasto")
+}
+
+model Proveedor {
+  id              String    @id @default(uuid())
+  nombre          String
+  cif             String?   @unique
+  email           String?
+  telefono        String?
+  direccion       String?
+  ciudad          String?
+  provincia       String?
+  codigoPostal    String?   @map("codigo_postal")
+  pais            String    @default("España")
+  
+  contactoNombre  String?   @map("contacto_nombre")
+  contactoEmail   String?   @map("contacto_email")
+  contactoTelefono String?  @map("contacto_telefono")
+  
+  activo          Boolean   @default(true)
+  observaciones   String?   @db.Text
+  
+  deletedAt       DateTime? @map("deleted_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  gastos          Gasto[]
+  
+  @@index([nombre], name: "idx_proveedor_nombre")
+  @@index([activo], name: "idx_proveedor_activo")
+  @@map("proveedor")
+}
+
+enum TipoAsiento {
+  INGRESO
+  EGRESO
+  TRASPASO
+  AJUSTE
+}
+
+model AsientoContable {
+  id              String      @id @default(uuid())
+  numero          String      @unique
+  fecha           DateTime
+  concepto        String
+  tipo            TipoAsiento
+  
+  // Importes
+  importe         Float
+  importeDebe     Float?      @map("importe_debe")
+  importeHaber    Float?      @map("importe_haber")
+  
+  // Cuentas contables
+  cuentaCodigo    String      @map("cuenta_codigo")
+  cuentaNombre    String      @map("cuenta_nombre")
+  
+  // Documento de soporte
+  documentoRef    String?     @map("documento_ref")
+  
+  deletedAt       DateTime?   @map("deleted_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  
+  // Relaciones
+  usuarioId       String      @map("usuario_id")
+  usuario         User        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  
+  facturaId       String?     @map("factura_id")
+  factura         Factura?    @relation(fields: [facturaId], references: [id], onDelete: SetNull)
+  
+  gastoId         String?     @map("gasto_id")
+  gasto           Gasto?      @relation(fields: [gastoId], references: [id], onDelete: SetNull)
+  
+  @@index([fecha], name: "idx_asiento_fecha")
+  @@index([tipo], name: "idx_asiento_tipo")
+  @@index([cuentaCodigo], name: "idx_asiento_cuenta")
+  @@index([usuarioId], name: "idx_asiento_usuario")
+  @@map("asiento_contable")
+}
+
+// M4 - Configuración de Cobranza
+model ConfiguracionCobranza {
+  id                    String   @id @default(uuid())
+  
+  // Configuración General
+  diasGracia           Int      @default(3) @map("dias_gracia")
+  interesMora          Float    @default(5.0) @map("interes_mora")
+  moneda               String   @default("EUR")
+  idioma               String   @default("es")
+  sepaHabilitado       Boolean  @default(false) @map("sepa_habilitado")
+  notificacionesAuto   Boolean  @default(true) @map("notificaciones_auto")
+  
+  // Configuración de Email
+  emailRemitente       String?  @map("email_remitente")
+  nombreRemitente      String?  @map("nombre_remitente")
+  
+  // Configuración de SEPA
+  sepaCreditorId       String?  @map("sepa_creditor_id")
+  sepaIban             String?  @map("sepa_iban")
+  sepaBic              String?  @map("sepa_bic")
+  
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+  
+  @@map("configuracion_cobranza")
+}
+
+model RecordatorioCobranza {
+  id              String   @id @default(uuid())
+  dias            Int
+  tipo            String   // 'antes' o 'despues'
+  activo          Boolean  @default(true)
+  plantilla       String
+  asunto          String?
+  contenido       String?
+  
+  orden           Int      @default(0)
+  
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  
+  @@index([tipo], name: "idx_recordatorio_tipo")
+  @@index([activo], name: "idx_recordatorio_activo")
+  @@index([orden], name: "idx_recordatorio_orden")
+  @@map("recordatorio_cobranza")
+}
+
+model AlertaCobranza {
+  id          String   @id @default(uuid())
+  nombre      String
+  descripcion String?
+  condicion   String   // Expresión condicional
+  tipo        String   // 'email', 'push', 'email_push'
+  activa      Boolean  @default(true)
+  
+  // Configuración de notificación
+  emailDestinatarios String? @map("email_destinatarios")
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  @@index([activa], name: "idx_alerta_activa")
+  @@index([tipo], name: "idx_alerta_tipo")
+  @@map("alerta_cobranza")
 }

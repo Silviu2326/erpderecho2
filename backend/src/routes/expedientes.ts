@@ -520,4 +520,225 @@ router.get('/:id/documentos', authMiddleware, async (req: AuthRequest, res: Resp
   }
 });
 
+/**
+ * @swagger
+ * /expedientes/stats/dashboard:
+ *   get:
+ *     summary: Obtener estadísticas del dashboard de expedientes
+ *     tags: [Expedientes]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Estadísticas del dashboard
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalExpedientes:
+ *                       type: integer
+ *                     porEstado:
+ *                       type: object
+ *                     porTipo:
+ *                       type: object
+ *                     expedientesMes:
+ *                       type: integer
+ *                     expedientesSemana:
+ *                       type: integer
+ *                     proximasAudiencias:
+ *                       type: integer
+ *                     plazosProximos:
+ *                       type: integer
+ *                     expedientesRecientes:
+ *                       type: array
+ */
+router.get('/stats/dashboard', authMiddleware, async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    const userRole = req.user?.role;
+    
+    // Construir where clause según el rol
+    let whereClause: any = { deletedAt: null };
+    
+    // Si no es admin o socio, filtrar por expedientes asignados
+    if (userRole !== 'admin' && userRole !== 'socio') {
+      whereClause.abogadoId = userId;
+    }
+
+    // Total de expedientes
+    const totalExpedientes = await prisma.expediente.count({
+      where: whereClause,
+    });
+
+    // Por estado
+    const porEstado = await prisma.expediente.groupBy({
+      by: ['estado'],
+      where: whereClause,
+      _count: {
+        estado: true,
+      },
+    });
+
+    const estadosMap: Record<string, number> = {
+      ACTIVO: 0,
+      CERRADO: 0,
+      ARCHIVADO: 0,
+      SUSPENDIDO: 0,
+    };
+    
+    porEstado.forEach(item => {
+      estadosMap[item.estado] = item._count.estado;
+    });
+
+    // Por tipo
+    const porTipo = await prisma.expediente.groupBy({
+      by: ['tipo'],
+      where: whereClause,
+      _count: {
+        tipo: true,
+      },
+    });
+
+    const tiposMap: Record<string, number> = {
+      CIVIL: 0,
+      PENAL: 0,
+      LABORAL: 0,
+      CONTENCIOSO: 0,
+      MERCANTIL: 0,
+      FAMILIA: 0,
+      ADMINISTRATIVO: 0,
+    };
+    
+    porTipo.forEach(item => {
+      tiposMap[item.tipo] = item._count.tipo;
+    });
+
+    // Expedientes creados este mes
+    const inicioMes = new Date();
+    inicioMes.setDate(1);
+    inicioMes.setHours(0, 0, 0, 0);
+    
+    const expedientesMes = await prisma.expediente.count({
+      where: {
+        ...whereClause,
+        createdAt: {
+          gte: inicioMes,
+        },
+      },
+    });
+
+    // Expedientes creados esta semana
+    const inicioSemana = new Date();
+    inicioSemana.setDate(inicioSemana.getDate() - inicioSemana.getDay());
+    inicioSemana.setHours(0, 0, 0, 0);
+    
+    const expedientesSemana = await prisma.expediente.count({
+      where: {
+        ...whereClause,
+        createdAt: {
+          gte: inicioSemana,
+        },
+      },
+    });
+
+    // Próximas audiencias (eventos tipo AUDIENCIA en los próximos 30 días)
+    const hoy = new Date();
+    const treintaDias = new Date();
+    treintaDias.setDate(hoy.getDate() + 30);
+    
+    const proximasAudiencias = await prisma.evento.count({
+      where: {
+        tipo: 'AUDIENCIA',
+        fechaInicio: {
+          gte: hoy,
+          lte: treintaDias,
+        },
+        deletedAt: null,
+        ...(userRole !== 'admin' && userRole !== 'socio' && { usuarioId: userId }),
+      },
+    });
+
+    // Plazos próximos (eventos tipo PLAZO en los próximos 7 días)
+    const sieteDias = new Date();
+    sieteDias.setDate(hoy.getDate() + 7);
+    
+    const plazosProximos = await prisma.evento.count({
+      where: {
+        tipo: 'PLAZO',
+        fechaInicio: {
+          gte: hoy,
+          lte: sieteDias,
+        },
+        deletedAt: null,
+        ...(userRole !== 'admin' && userRole !== 'socio' && { usuarioId: userId }),
+      },
+    });
+
+    // Expedientes recientes (últimos 5)
+    const expedientesRecientes = await prisma.expediente.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: {
+        id: true,
+        numeroExpediente: true,
+        tipo: true,
+        estado: true,
+        createdAt: true,
+        cliente: {
+          select: {
+            nombre: true,
+          },
+        },
+      },
+    });
+
+    // Próximos eventos (audiencias y plazos)
+    const proximosEventos = await prisma.evento.findMany({
+      where: {
+        tipo: { in: ['AUDIENCIA', 'PLAZO'] },
+        fechaInicio: {
+          gte: hoy,
+        },
+        deletedAt: null,
+        ...(userRole !== 'admin' && userRole !== 'socio' && { usuarioId: userId }),
+      },
+      orderBy: { fechaInicio: 'asc' },
+      take: 5,
+      select: {
+        id: true,
+        titulo: true,
+        tipo: true,
+        fechaInicio: true,
+        expediente: {
+          select: {
+            numeroExpediente: true,
+          },
+        },
+      },
+    });
+
+    res.json(formatResponse({
+      totalExpedientes,
+      porEstado: estadosMap,
+      porTipo: tiposMap,
+      expedientesMes,
+      expedientesSemana,
+      proximasAudiencias,
+      plazosProximos,
+      expedientesRecientes,
+      proximosEventos,
+    }));
+  } catch (error) {
+    console.error('Get dashboard stats error:', error);
+    res.status(500).json({ success: false, error: { message: 'Internal server error' } });
+  }
+});
+
 export default router;

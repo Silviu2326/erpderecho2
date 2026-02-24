@@ -1,71 +1,33 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Download, TrendingUp, TrendingDown,
-  Calculator, PieChart, BarChart4, FileText, CreditCard, Wallet,
-  ArrowUpRight, ArrowDownRight, Lock, Crown, UserCheck, Building2,
-  FileCheck, Receipt, Repeat, BadgeEuro, CheckCircle2, Target, X,
-  CheckCircle, AlertCircle, Info, Send, Printer
+  Calculator, PieChart, BarChart3, FileText, Wallet,
+  ArrowUpRight, ArrowDownRight, Lock, Search, Filter,
+  ChevronLeft, ChevronRight, Trash2, Eye, X,
+  CheckCircle, AlertCircle, Calendar, Building2,
+  BadgeEuro, Receipt, BookOpen
 } from 'lucide-react';
+import { LineChart, Line, PieChart as RePieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { contabilidadService, type AsientoContable, type ContabilidadStats, type TipoAsiento } from '@/services/contabilidadService';
 import { useRole } from '@/hooks/useRole';
-import type { UserRole } from '@/types/roles';
 
 // Tipos
-type ModalType = 'export' | 'declare' | 'pay' | 'viewAll' | 'payroll' | null;
-
-interface Movimiento {
+interface Tab {
   id: string;
-  fecha: string;
-  tipo: 'ingreso' | 'egreso' | string;
-  cuenta: string;
-  monto: number;
-  referencia: string;
+  label: string;
+  icon: React.ElementType;
 }
 
-interface CuentaPagar {
-  id: string;
-  proveedor: string;
-  monto: number;
-  vencimiento: string;
-  dias: number;
-  estado: string;
+interface LibroMayorEntry {
+  codigo: string;
+  nombre: string;
+  total: number;
+  asientos: AsientoContable[];
 }
 
-// Datos de ejemplo para contabilidad
-const balanceData = {
-  activos: 485000,
-  pasivos: 125000,
-  patrimonio: 360000,
-  ingresosAnuales: 590000,
-  gastosAnuales: 215000,
-  utilidadNeta: 375000,
-  ivaRecaudado: 45200,
-  ivaPagado: 18900,
-  ivaPorPagar: 26300,
-  retencionesISR: 48500,
-};
-
-const cuentasPorCobrar = [
-  { id: 'CC-001', cliente: 'TechCorp SL', monto: 25000, vencimiento: '2026-03-15', dias: 5, estado: 'vigente' },
-  { id: 'CC-002', cliente: 'InnovateLab SA', monto: 18500, vencimiento: '2026-03-01', dias: -11, estado: 'vencida' },
-  { id: 'CC-003', cliente: 'María García', monto: 8200, vencimiento: '2026-03-25', dias: 15, estado: 'vigente' },
-  { id: 'CC-004', cliente: 'GlobalTech Inc', monto: 32000, vencimiento: '2026-02-28', dias: -12, estado: 'vencida' },
-];
-
-const cuentasPorPagar = [
-  { id: 'CP-001', proveedor: 'Office Supplies Ltd', monto: 3500, vencimiento: '2026-03-20', dias: 10, estado: 'vigente' },
-  { id: 'CP-002', proveedor: 'Legal Software Inc', monto: 12000, vencimiento: '2026-03-10', dias: 0, estado: 'vencehoy' },
-  { id: 'CP-003', proveedor: 'Cloud Services SA', monto: 2800, vencimiento: '2026-03-30', dias: 20, estado: 'vigente' },
-];
-
-const movimientosRecientes = [
-  { id: 'MOV-156', fecha: '2026-03-08', tipo: 'ingreso', cuenta: 'Honorarios profesionales', monto: 8500, referencia: 'FAC-2026-045' },
-  { id: 'MOV-155', fecha: '2026-03-07', tipo: 'egreso', cuenta: 'Nómina', monto: 15200, referencia: 'NOM-03-2026' },
-  { id: 'MOV-154', fecha: '2026-03-06', tipo: 'ingreso', cuenta: 'Servicios legales', monto: 12000, referencia: 'FAC-2026-044' },
-  { id: 'MOV-153', fecha: '2026-03-05', tipo: 'egreso', cuenta: 'Renta oficina', monto: 4500, referencia: 'REP-003' },
-  { id: 'MOV-152', fecha: '2026-03-04', tipo: 'egreso', cuenta: 'Servicios profesionales', monto: 2800, referencia: 'FAC-PRV-089' },
-];
+const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('es-ES', {
@@ -76,287 +38,284 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
+
 export default function Contabilidad() {
   const { role, roleConfig } = useRole();
-  const [activeTab, setActiveTab] = useState('overview');
   
+  // Tabs state
+  const [activeTab, setActiveTab] = useState('resumen');
+  
+  // Data states
+  const [stats, setStats] = useState<ContabilidadStats | null>(null);
+  const [asientos, setAsientos] = useState<AsientoContable[]>([]);
+  const [cuentas, setCuentas] = useState<{ codigo: string; nombre: string; total: number }[]>([]);
+  const [libroMayor, setLibroMayor] = useState<LibroMayorEntry | null>(null);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [itemsPerPage] = useState(10);
+  
+  // Filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [tipoFilter, setTipoFilter] = useState<TipoAsiento | ''>('');
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
+  const [cuentaFilter, setCuentaFilter] = useState('');
+  
+  // Loading states
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingLibroMayor, setIsLoadingLibroMayor] = useState(false);
+  
+  // Modal states
   const [showNewEntryModal, setShowNewEntryModal] = useState(false);
-  const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [toast, setToast] = useState<{message: string; type: 'success' | 'info' | 'error'} | null>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedAsiento, setSelectedAsiento] = useState<AsientoContable | null>(null);
   
-  // Estados para datos mutables
-  const [movimientos, setMovimientos] = useState<Movimiento[]>(movimientosRecientes as Movimiento[]);
-  const [cuentasPagar, setCuentasPagar] = useState<CuentaPagar[]>(cuentasPorPagar);
+  // Toast
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
   
   // Form states
   const [newEntryForm, setNewEntryForm] = useState({
-    tipo: '',
-    cuenta: '',
-    monto: '',
+    numero: '',
     fecha: new Date().toISOString().split('T')[0],
-    concepto: ''
+    concepto: '',
+    tipo: 'INGRESO' as TipoAsiento,
+    importe: '',
+    importeDebe: '',
+    importeHaber: '',
+    cuentaCodigo: '',
+    cuentaNombre: '',
+    documentoRef: ''
   });
-  
-  const [payForm, setPayForm] = useState({
-    proveedor: '',
-    monto: '',
-    metodo: 'transferencia',
-    notas: ''
-  });
+
+  // Permissions
+  const permissions = {
+    canView: role === 'super_admin' || role === 'socio' || role === 'contador' || role === 'administrador',
+    canCreate: role === 'super_admin' || role === 'contador',
+    canEdit: role === 'super_admin' || role === 'contador',
+    canDelete: role === 'super_admin',
+    canViewLibroMayor: role === 'super_admin' || role === 'contador',
+  };
 
   const showToast = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Determinar permisos según el rol
-  const permissions = useMemo(() => {
-    const moduleAccess = roleConfig.permissions.modules.contabilidad;
-
-    return {
-      hasAccess: moduleAccess !== 'none',
-      canViewAll: moduleAccess === 'full' || moduleAccess === 'view',
-      canViewOwn: moduleAccess === 'own',
-
-      // Acciones contables
-      canCreateEntries: role === 'super_admin' || role === 'contador',
-      canEditEntries: role === 'super_admin' || role === 'contador',
-      canDeleteEntries: role === 'super_admin',
-      canApproveEntries: role === 'super_admin' || role === 'socio',
-
-      // Funciones específicas
-      canGenerateTaxReports: role === 'super_admin' || role === 'contador',
-      canProcessPayroll: role === 'super_admin' || role === 'contador',
-      canReconcileBanks: role === 'super_admin' || role === 'contador',
-      canViewFullBalance: role === 'super_admin' || role === 'socio' || role === 'contador',
-
-      // Gestión administrativa
-      canManageSuppliers: role === 'super_admin' || role === 'administrador',
-      canApprovePayments: role === 'super_admin' || role === 'socio',
-      canViewBudgets: roleConfig.permissions.canViewFinancialData,
-      canEditBudgets: role === 'super_admin' || role === 'socio',
-    };
-  }, [role, roleConfig]);
-
-  // Stats según rol
-  const stats = useMemo(() => {
-    switch (role) {
-      case 'super_admin':
-      case 'socio':
-        return [
-          { label: 'Patrimonio Neto', value: formatCurrency(balanceData.patrimonio), change: '+12.5%', trend: 'up', icon: BadgeEuro, color: 'emerald', subtitle: 'Activos - Pasivos' },
-          { label: 'Utilidad del Año', value: formatCurrency(balanceData.utilidadNeta), change: '+18.3%', trend: 'up', icon: TrendingUp, color: 'blue', subtitle: 'Ingresos - Gastos' },
-          { label: 'Por Cobrar', value: formatCurrency(cuentasPorCobrar.reduce((acc, c) => acc + c.monto, 0)), change: `${cuentasPorCobrar.length} cuentas`, trend: 'up', icon: Wallet, color: 'amber', subtitle: `${cuentasPorCobrar.filter(c => c.estado === 'vencida').length} vencidas` },
-          { label: 'Liquidez', value: '85%', change: 'Excelente', trend: 'up', icon: Target, color: 'purple', subtitle: 'Capacidad de pago' },
-        ];
-
-      case 'contador':
-        return [
-          { label: 'IVA por Pagar', value: formatCurrency(balanceData.ivaPorPagar), change: 'Q1 2026', trend: 'up', icon: Receipt, color: 'amber', subtitle: `Recaudado: ${formatCurrency(balanceData.ivaRecaudado)}` },
-          { label: 'Retenciones ISR', value: formatCurrency(balanceData.retencionesISR), change: 'Mensual', trend: 'up', icon: FileCheck, color: 'blue', subtitle: 'Pendiente declarar' },
-          { label: 'Conciliaciones', value: '12', change: '3 pendientes', trend: 'down', icon: Repeat, color: 'purple', subtitle: 'Cuentas bancarias' },
-          { label: 'Pólizas del Mes', value: '148', change: 'Febrero', trend: 'up', icon: FileText, color: 'emerald', subtitle: '45 automáticas' },
-        ];
-
-      case 'administrador':
-        return [
-          { label: 'Presupuesto Mes', value: formatCurrency(18500), change: '72% usado', trend: 'up', icon: Calculator, color: 'blue', subtitle: 'Gastos operativos' },
-          { label: 'Por Pagar', value: formatCurrency(cuentasPorPagar.reduce((acc, c) => acc + c.monto, 0)), change: `${cuentasPorPagar.length} proveedores`, trend: 'up', icon: CreditCard, color: 'amber', subtitle: `${cuentasPorPagar.filter(c => c.estado === 'vencehoy').length} vencen hoy` },
-          { label: 'Gastos del Mes', value: formatCurrency(15200), change: '+5.2%', trend: 'up', icon: TrendingDown, color: 'red', subtitle: 'vs mes anterior' },
-          { label: 'Proveedores Activos', value: '24', change: '3 nuevos', trend: 'up', icon: Building2, color: 'purple', subtitle: 'En el sistema' },
-        ];
-
-      default:
-        return [];
+  // Fetch stats
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await contabilidadService.getStats();
+      if (response.success) {
+        setStats(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+      showToast('Error al cargar estadísticas', 'error');
     }
-  }, [role]);
+  }, []);
 
-  // Información de página según rol
-  const getPageInfo = () => {
-    switch (role) {
-      case 'super_admin':
-        return {
-          title: 'Contabilidad General',
-          subtitle: 'Control total del sistema contable',
-          description: 'Gestión completa de la contabilidad del bufete'
-        };
-      case 'socio':
-        return {
-          title: 'Estados Financieros',
-          subtitle: 'Visión ejecutiva de finanzas',
-          description: 'Supervisión de resultados y rentabilidad'
-        };
-      case 'contador':
-        return {
-          title: 'Módulo Contable',
-          subtitle: 'Gestión contable y fiscal',
-          description: 'Registro, conciliación y reportes fiscales'
-        };
-      case 'administrador':
-        return {
-          title: 'Gestión Administrativa',
-          subtitle: 'Control de gastos y proveedores',
-          description: 'Administración de pagos y presupuestos'
-        };
-      default:
-        return {
-          title: 'Contabilidad',
-          subtitle: 'Acceso restringido',
-          description: ''
-        };
+  // Fetch asientos with pagination
+  const fetchAsientos = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const params = {
+        page: currentPage,
+        limit: itemsPerPage,
+        search: searchTerm || undefined,
+        tipo: tipoFilter || undefined,
+        fechaDesde: fechaDesde || undefined,
+        fechaHasta: fechaHasta || undefined,
+        cuentaCodigo: cuentaFilter || undefined,
+        sort: 'fecha',
+        order: 'desc' as const
+      };
+      
+      const response = await contabilidadService.getAsientos(params);
+      if (response.success) {
+        setAsientos(response.data);
+        setTotalPages(response.meta.totalPages);
+      }
+    } catch (error) {
+      console.error('Error fetching asientos:', error);
+      showToast('Error al cargar asientos contables', 'error');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [currentPage, itemsPerPage, searchTerm, tipoFilter, fechaDesde, fechaHasta, cuentaFilter]);
 
-  const pageInfo = getPageInfo();
-
-  // Tabs disponibles según rol
-  const availableTabs = useMemo(() => {
-    const baseTabs = [
-      { id: 'overview', label: 'Resumen', icon: BarChart4 },
-    ];
-
-    if (role === 'super_admin' || role === 'socio') {
-      return [
-        ...baseTabs,
-        { id: 'balance', label: 'Balance General', icon: PieChart },
-        { id: 'income', label: 'Estado Resultados', icon: TrendingUp },
-        { id: 'cashflow', label: 'Flujo de Caja', icon: Wallet },
-        { id: 'budgets', label: 'Presupuestos', icon: Target },
-      ];
+  // Fetch cuentas
+  const fetchCuentas = useCallback(async () => {
+    try {
+      const response = await contabilidadService.getCuentas();
+      if (response.success) {
+        setCuentas(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching cuentas:', error);
     }
+  }, []);
 
-    if (role === 'contador') {
-      return [
-        ...baseTabs,
-        { id: 'entries', label: 'Pólizas', icon: FileText },
-        { id: 'reconciliation', label: 'Conciliación', icon: Repeat },
-        { id: 'tax', label: 'Fiscal', icon: Receipt },
-        { id: 'payroll', label: 'Nómina', icon: UserCheck },
-      ];
+  // Fetch libro mayor
+  const fetchLibroMayor = useCallback(async (cuentaCodigo: string) => {
+    if (!cuentaCodigo) return;
+    setIsLoadingLibroMayor(true);
+    try {
+      const response = await contabilidadService.getLibroMayor(cuentaCodigo, fechaDesde, fechaHasta);
+      if (response.success) {
+        const cuenta = cuentas.find(c => c.codigo === cuentaCodigo);
+        setLibroMayor({
+          codigo: cuentaCodigo,
+          nombre: cuenta?.nombre || '',
+          total: cuenta?.total || 0,
+          asientos: response.data
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching libro mayor:', error);
+      showToast('Error al cargar libro mayor', 'error');
+    } finally {
+      setIsLoadingLibroMayor(false);
     }
+  }, [cuentas, fechaDesde, fechaHasta]);
 
-    if (role === 'administrador') {
-      return [
-        ...baseTabs,
-        { id: 'payables', label: 'Cuentas por Pagar', icon: CreditCard },
-        { id: 'expenses', label: 'Gastos', icon: TrendingDown },
-        { id: 'suppliers', label: 'Proveedores', icon: Building2 },
-      ];
+  // Load initial data
+  useEffect(() => {
+    if (permissions.canView) {
+      fetchStats();
+      fetchCuentas();
     }
+  }, [fetchStats, fetchCuentas, permissions.canView]);
 
-    return baseTabs;
-  }, [role]);
+  // Load asientos when tab changes or filters change
+  useEffect(() => {
+    if (activeTab === 'asientos' && permissions.canView) {
+      fetchAsientos();
+    }
+  }, [activeTab, fetchAsientos, permissions.canView]);
+
+  // Load libro mayor when cuenta changes
+  useEffect(() => {
+    if (activeTab === 'libro-mayor' && cuentaFilter && permissions.canViewLibroMayor) {
+      fetchLibroMayor(cuentaFilter);
+    }
+  }, [activeTab, cuentaFilter, fetchLibroMayor, permissions.canViewLibroMayor]);
 
   // Handlers
-  const handleRegisterEntry = () => {
-    if (!newEntryForm.tipo || !newEntryForm.cuenta || !newEntryForm.monto) {
-      showToast('Por favor completa todos los campos', 'error');
+  const handleCreateAsiento = async () => {
+    if (!newEntryForm.numero || !newEntryForm.concepto || !newEntryForm.importe || !newEntryForm.cuentaCodigo) {
+      showToast('Por favor complete todos los campos obligatorios', 'error');
       return;
     }
-    
-    const newMov: Movimiento = {
-      id: `MOV-${Date.now().toString().slice(-3)}`,
-      fecha: newEntryForm.fecha,
-      tipo: newEntryForm.tipo.toLowerCase().includes('ingreso') ? 'ingreso' : 'egreso',
-      cuenta: newEntryForm.cuenta,
-      monto: parseFloat(newEntryForm.monto),
-      referencia: `REF-${Date.now().toString().slice(-4)}`
-    };
-    
-    setMovimientos([newMov, ...movimientos]);
-    setNewEntryForm({ tipo: '', cuenta: '', monto: '', fecha: new Date().toISOString().split('T')[0], concepto: '' });
-    setShowNewEntryModal(false);
-    showToast('Asiento registrado correctamente');
-  };
 
-  const handleExport = () => {
-    showToast('Exportando balance general...', 'info');
-    setTimeout(() => {
-      showToast('Balance exportado correctamente');
-      setActiveModal(null);
-    }, 1500);
-  };
+    try {
+      const data = {
+        ...newEntryForm,
+        importe: parseFloat(newEntryForm.importe),
+        importeDebe: newEntryForm.importeDebe ? parseFloat(newEntryForm.importeDebe) : undefined,
+        importeHaber: newEntryForm.importeHaber ? parseFloat(newEntryForm.importeHaber) : undefined
+      };
 
-  const handleGenerateDeclaration = () => {
-    showToast('Generando declaración fiscal...', 'info');
-    setTimeout(() => {
-      showToast('Declaración generada y lista para presentar');
-      setActiveModal(null);
-    }, 2000);
-  };
-
-  const handlePay = () => {
-    if (!payForm.proveedor || !payForm.monto) {
-      showToast('Por favor completa todos los campos', 'error');
-      return;
+      const response = await contabilidadService.createAsiento(data);
+      if (response.success) {
+        showToast('Asiento contable creado correctamente');
+        setShowNewEntryModal(false);
+        setNewEntryForm({
+          numero: '',
+          fecha: new Date().toISOString().split('T')[0],
+          concepto: '',
+          tipo: 'INGRESO',
+          importe: '',
+          importeDebe: '',
+          importeHaber: '',
+          cuentaCodigo: '',
+          cuentaNombre: '',
+          documentoRef: ''
+        });
+        fetchAsientos();
+        fetchStats();
+      }
+    } catch (error) {
+      console.error('Error creating asiento:', error);
+      showToast('Error al crear el asiento', 'error');
     }
-    showToast(`Pago de ${formatCurrency(parseFloat(payForm.monto))} a ${payForm.proveedor} procesado`, 'success');
-    setCuentasPagar(cuentasPagar.filter(c => c.proveedor !== payForm.proveedor));
-    setPayForm({ proveedor: '', monto: '', metodo: 'transferencia', notas: '' });
-    setActiveModal(null);
   };
 
-  // Mensaje de acceso denegado
-  const getRoleMessage = () => {
-    const messages: Record<UserRole, { title: string; description: string; actions: string[] }> = {
-      super_admin: {
-        title: 'Control Total de Contabilidad',
-        description: 'Acceso completo a todos los módulos contables y financieros.',
-        actions: ['Gestión completa del sistema contable', 'Aprobar asientos y pólizas', 'Configurar catálogo de cuentas', 'Ver todos los reportes']
-      },
-      socio: {
-        title: 'Visión Financiera Ejecutiva',
-        description: 'Acceso a estados financieros y análisis de rentabilidad.',
-        actions: ['Ver estados financieros', 'Aprobar gastos mayores', 'Analizar rentabilidad', 'Revisar presupuestos']
-      },
-      contador: {
-        title: 'Gestión Contable Completa',
-        description: 'Control de pólizas, conciliaciones y obligaciones fiscales.',
-        actions: ['Registrar asientos contables', 'Conciliar cuentas bancarias', 'Generar reportes fiscales', 'Procesar nómina']
-      },
-      administrador: {
-        title: 'Gestión de Gastos y Proveedores',
-        description: 'Control de cuentas por pagar y presupuestos operativos.',
-        actions: ['Gestionar proveedores', 'Registrar gastos operativos', 'Solicitar pagos', 'Controlar presupuestos']
-      },
-      abogado_senior: {
-        title: 'Sin Acceso a Contabilidad',
-        description: 'Tu rol no tiene acceso al módulo de contabilidad.',
-        actions: ['Gestiona tus expedientes', 'Registra tiempo facturable', 'Ve tus informes personales']
-      },
-      abogado_junior: {
-        title: 'Sin Acceso a Contabilidad',
-        description: 'Tu rol no tiene acceso al módulo de contabilidad.',
-        actions: ['Trabaja en tus casos asignados', 'Registra tu tiempo', 'Sube documentos']
-      },
-      paralegal: {
-        title: 'Sin Acceso a Contabilidad',
-        description: 'Tu rol no tiene acceso al módulo de contabilidad.',
-        actions: ['Colabora en expedientes', 'Actualiza trámites', 'Gestiona documentos']
-      },
-      secretario: {
-        title: 'Sin Acceso a Contabilidad',
-        description: 'Tu rol no tiene acceso al módulo de contabilidad.',
-        actions: ['Organiza archivos', 'Gestiona agenda', 'Actualiza información']
-      },
-      recepcionista: {
-        title: 'Sin Acceso a Contabilidad',
-        description: 'Tu rol no tiene acceso al módulo de contabilidad.',
-        actions: ['Atiende llamadas', 'Gestiona citas', 'Recibe clientes']
-      },
-    };
+  const handleDeleteAsiento = async () => {
+    if (!selectedAsiento) return;
 
-    return messages[role] || messages.recepcionista;
+    try {
+      const response = await contabilidadService.deleteAsiento(selectedAsiento.id);
+      if (response.success) {
+        showToast('Asiento eliminado correctamente');
+        setShowDeleteModal(false);
+        setSelectedAsiento(null);
+        fetchAsientos();
+        fetchStats();
+      }
+    } catch (error) {
+      console.error('Error deleting asiento:', error);
+      showToast('Error al eliminar el asiento', 'error');
+    }
   };
 
-  // Si el rol no tiene acceso
-  if (!permissions.hasAccess) {
-    const message = getRoleMessage();
+  const handleViewAsiento = (asiento: AsientoContable) => {
+    setSelectedAsiento(asiento);
+    setShowViewModal(true);
+  };
+
+  const handleDeleteClick = (asiento: AsientoContable) => {
+    setSelectedAsiento(asiento);
+    setShowDeleteModal(true);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setTipoFilter('');
+    setFechaDesde('');
+    setFechaHasta('');
+    setCuentaFilter('');
+    setCurrentPage(1);
+  };
+
+  // Chart data preparation
+  const evolutionData = stats ? [
+    { name: 'Ingresos', value: stats.totalIngresos, color: '#10b981' },
+    { name: 'Egresos', value: stats.totalEgresos, color: '#ef4444' },
+    { name: 'Balance', value: stats.balance, color: '#3b82f6' }
+  ] : [];
+
+  const tipoDistribution = stats ? [
+    { name: 'Ingresos', value: stats.asientosPorTipo.INGRESO },
+    { name: 'Egresos', value: stats.asientosPorTipo.EGRESO },
+    { name: 'Traspasos', value: stats.asientosPorTipo.TRASPASO },
+    { name: 'Ajustes', value: stats.asientosPorTipo.AJUSTE }
+  ] : [];
+
+  // Tabs configuration
+  const tabs: Tab[] = [
+    { id: 'resumen', label: 'Resumen', icon: BarChart3 },
+    { id: 'asientos', label: 'Asientos Contables', icon: FileText },
+    ...(permissions.canViewLibroMayor ? [{ id: 'libro-mayor', label: 'Libro Mayor', icon: BookOpen }] : [])
+  ];
+
+  // Access denied view
+  if (!permissions.canView) {
     return (
-      <AppLayout
-        title="Contabilidad"
-        subtitle="Acceso restringido"
-      >
+      <AppLayout title="Contabilidad" subtitle="Acceso restringido">
         <main className="flex-1 overflow-y-auto p-6 lg:p-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -367,20 +326,10 @@ export default function Contabilidad() {
               <div className="w-20 h-20 mx-auto mb-6 bg-slate-800 rounded-full flex items-center justify-center">
                 <Lock className="w-10 h-10 text-slate-600" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">{message.title}</h2>
-              <p className="text-slate-400 mb-6">{message.description}</p>
-
-              <div className="p-4 bg-slate-800/50 rounded-xl text-left">
-                <p className="text-sm font-medium text-slate-300 mb-3">Acciones disponibles para tu rol:</p>
-                <ul className="space-y-2">
-                  {message.actions.map((action, idx) => (
-                    <li key={idx} className="flex items-center gap-2 text-sm text-slate-400">
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                      {action}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Acceso Denegado</h2>
+              <p className="text-slate-400">
+                No tienes permisos para acceder al módulo de contabilidad.
+              </p>
             </div>
           </motion.div>
         </main>
@@ -390,15 +339,13 @@ export default function Contabilidad() {
 
   const headerActions = (
     <>
-      {permissions.canCreateEntries && (
+      {permissions.canCreate && (
         <button
           onClick={() => setShowNewEntryModal(true)}
-          className="hidden sm:flex items-center gap-2 px-4 py-2 bg-emerald-500 text-slate-950 font-medium rounded-xl hover:bg-emerald-400 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-slate-950 font-medium rounded-xl hover:bg-emerald-400 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          <span className="hidden lg:inline">
-            {role === 'contador' ? 'Nueva Póliza' : 'Nuevo Asiento'}
-          </span>
+          <span className="hidden sm:inline">Nuevo Asiento</span>
         </button>
       )}
     </>
@@ -406,14 +353,14 @@ export default function Contabilidad() {
 
   return (
     <AppLayout
-      title={pageInfo.title}
-      subtitle={pageInfo.subtitle}
+      title="Contabilidad"
+      subtitle="Gestión de asientos contables y estados financieros"
       headerActions={headerActions}
     >
       <main className="flex-1 overflow-y-auto p-6 lg:p-8">
         {/* Tabs */}
         <div className="flex items-center gap-2 mb-6 flex-wrap">
-          {availableTabs.map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -429,376 +376,434 @@ export default function Contabilidad() {
           ))}
         </div>
 
-        {activeTab === 'overview' && (
-          <>
-            {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              {stats.map((stat, index) => (
-                <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl hover:border-emerald-500/30 transition-all group cursor-pointer"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      stat.color === 'blue' ? 'bg-blue-500/20' :
-                      stat.color === 'emerald' ? 'bg-emerald-500/20' :
-                      stat.color === 'amber' ? 'bg-amber-500/20' :
-                      stat.color === 'purple' ? 'bg-purple-500/20' :
-                      'bg-red-500/20'
-                    }`}>
-                      <stat.icon className={`w-5 h-5 ${
-                        stat.color === 'blue' ? 'text-blue-500' :
-                        stat.color === 'emerald' ? 'text-emerald-500' :
-                        stat.color === 'amber' ? 'text-amber-500' :
-                        stat.color === 'purple' ? 'text-purple-500' :
-                        'text-red-500'
-                      }`} />
-                    </div>
-                    <div className={`flex items-center gap-0.5 text-xs font-medium ${
-                      stat.trend === 'up' ? 'text-emerald-500' : 'text-red-500'
-                    }`}>
-                      {stat.trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                      {stat.change}
-                    </div>
+        {/* RESUMEN TAB */}
+        {activeTab === 'resumen' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-emerald-500" />
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-0.5">{stat.value}</h3>
-                  <p className="text-slate-400 text-sm">{stat.label}</p>
-                  <p className="text-slate-600 text-xs mt-1">{stat.subtitle}</p>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Main Grid */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              {/* Balance Visual - Solo Admin/Socio */}
-              {(role === 'super_admin' || role === 'socio') && (
-                <div className="xl:col-span-2 bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h2 className="text-lg font-semibold text-white">Balance General</h2>
-                      <p className="text-sm text-slate-400">Estado financiero al 10 de Marzo, 2026</p>
-                    </div>
-                    <button 
-                  onClick={() => setActiveModal('export')}
-                  className="text-sm text-emerald-500 hover:text-emerald-400 flex items-center gap-1"
-                >
-                  <Download className="w-4 h-4" />
-                  Exportar
-                </button>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-6">
-                    <div className="space-y-4">
-                      <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                        <p className="text-xs text-emerald-400 font-medium mb-1">ACTIVOS</p>
-                        <p className="text-2xl font-bold text-white">{formatCurrency(balanceData.activos)}</p>
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between text-slate-300">
-                          <span>Efectivo</span>
-                          <span>{formatCurrency(185000)}</span>
-                        </div>
-                        <div className="flex justify-between text-slate-300">
-                          <span>Cuentas por cobrar</span>
-                          <span>{formatCurrency(120000)}</span>
-                        </div>
-                        <div className="flex justify-between text-slate-300">
-                          <span>Activos fijos</span>
-                          <span>{formatCurrency(180000)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-                        <p className="text-xs text-red-400 font-medium mb-1">PASIVOS</p>
-                        <p className="text-2xl font-bold text-white">{formatCurrency(balanceData.pasivos)}</p>
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between text-slate-300">
-                          <span>Cuentas por pagar</span>
-                          <span>{formatCurrency(45000)}</span>
-                        </div>
-                        <div className="flex justify-between text-slate-300">
-                          <span>Préstamos</span>
-                          <span>{formatCurrency(65000)}</span>
-                        </div>
-                        <div className="flex justify-between text-slate-300">
-                          <span>Otros pasivos</span>
-                          <span>{formatCurrency(15000)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                        <p className="text-xs text-blue-400 font-medium mb-1">PATRIMONIO</p>
-                        <p className="text-2xl font-bold text-white">{formatCurrency(balanceData.patrimonio)}</p>
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between text-slate-300">
-                          <span>Capital social</span>
-                          <span>{formatCurrency(200000)}</span>
-                        </div>
-                        <div className="flex justify-between text-slate-300">
-                          <span>Reservas</span>
-                          <span>{formatCurrency(50000)}</span>
-                        </div>
-                        <div className="flex justify-between text-emerald-400">
-                          <span className="font-medium">Utilidad del ejercicio</span>
-                          <span className="font-bold">{formatCurrency(110000)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 pt-6 border-t border-slate-800">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-400">Ecuación contable:</span>
-                      <span className="text-sm text-slate-300">
-                        Activos ({formatCurrency(balanceData.activos)}) = Pasivos ({formatCurrency(balanceData.pasivos)}) + Patrimonio ({formatCurrency(balanceData.patrimonio)})
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-0.5 text-xs font-medium text-emerald-500">
+                    <ArrowUpRight className="w-3 h-3" />
+                    Ingresos
                   </div>
                 </div>
-              )}
+                <h3 className="text-2xl font-bold text-white mb-0.5">
+                  {stats ? formatCurrency(stats.totalIngresos) : '---'}
+                </h3>
+                <p className="text-slate-400 text-sm">Total ingresos</p>
+              </div>
 
-              {/* Contador - Obligaciones Fiscales */}
-              {role === 'contador' && (
-                <div className="xl:col-span-2 bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h2 className="text-lg font-semibold text-white">Obligaciones Fiscales</h2>
-                      <p className="text-sm text-slate-400">Pendientes y próximos vencimientos</p>
-                    </div>
+              <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
+                    <TrendingDown className="w-5 h-5 text-red-500" />
                   </div>
-
-                  <div className="space-y-4">
-                    <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="text-sm font-medium text-white">IVA - Febrero 2026</h3>
-                          <p className="text-xs text-slate-400">Vence: 20 de Marzo, 2026</p>
-                        </div>
-                        <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-xs font-medium rounded-full">
-                          Urgente
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <p className="text-slate-500 text-xs">IVA Cobrado</p>
-                          <p className="text-white font-bold">{formatCurrency(balanceData.ivaRecaudado)}</p>
-                        </div>
-                        <div>
-                          <p className="text-slate-500 text-xs">IVA Pagado</p>
-                          <p className="text-white font-bold">{formatCurrency(balanceData.ivaPagado)}</p>
-                        </div>
-                        <div>
-                          <p className="text-slate-500 text-xs">Por Pagar</p>
-                          <p className="text-amber-400 font-bold">{formatCurrency(balanceData.ivaPorPagar)}</p>
-                        </div>
-                      </div>
-                      <button 
-                        onClick={() => setActiveModal('declare')}
-                        className="mt-3 w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-medium rounded-xl transition-colors"
-                      >
-                        Generar Declaración
-                      </button>
-                    </div>
-
-                    <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="text-sm font-medium text-white">Retenciones ISR - Febrero</h3>
-                          <p className="text-xs text-slate-400">Vence: 17 de Marzo, 2026</p>
-                        </div>
-                        <span className="px-2 py-1 bg-blue-500/20 text-blue-400 text-xs font-medium rounded-full">
-                          Pendiente
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-slate-300">Monto a declarar:</p>
-                        <p className="text-xl font-bold text-white">{formatCurrency(balanceData.retencionesISR)}</p>
-                      </div>
-                      <button 
-                        onClick={() => setActiveModal('declare')}
-                        className="mt-3 w-full py-2 bg-blue-500 hover:bg-blue-400 text-white text-sm font-medium rounded-xl transition-colors"
-                      >
-                        Preparar Declaración
-                      </button>
-                    </div>
-
-                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="text-sm font-medium text-white">Nómina - Febrero 2026</h3>
-                          <p className="text-xs text-slate-400">Procesada: 28 de Febrero, 2026</p>
-                        </div>
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-0.5 text-xs font-medium text-red-500">
+                    <ArrowDownRight className="w-3 h-3" />
+                    Egresos
                   </div>
                 </div>
-              )}
+                <h3 className="text-2xl font-bold text-white mb-0.5">
+                  {stats ? formatCurrency(stats.totalEgresos) : '---'}
+                </h3>
+                <p className="text-slate-400 text-sm">Total egresos</p>
+              </div>
 
-              {/* Administrador - Cuentas por Pagar */}
-              {role === 'administrador' && (
-                <div className="xl:col-span-2 bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h2 className="text-lg font-semibold text-white">Cuentas por Pagar Próximas</h2>
-                      <p className="text-sm text-slate-400">Vencimientos de los próximos 30 días</p>
-                    </div>
+              <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                    <BadgeEuro className="w-5 h-5 text-blue-500" />
                   </div>
-
-                  <div className="space-y-3">
-                    {cuentasPorPagar.map((cuenta) => (
-                      <div key={cuenta.id} className={`p-4 rounded-xl border ${
-                        cuenta.estado === 'vencehoy' ? 'bg-red-500/10 border-red-500/20' : 'bg-slate-800/50 border-slate-700'
-                      }`}>
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <p className="text-sm font-medium text-white">{cuenta.proveedor}</p>
-                            <p className="text-xs text-slate-400">{cuenta.id}</p>
-                          </div>
-                          {cuenta.estado === 'vencehoy' && (
-                            <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs font-medium rounded-full">
-                              Vence Hoy
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4 text-xs text-slate-400">
-                            <span>Vence: {cuenta.vencimiento}</span>
-                            <span>{cuenta.dias > 0 ? `${cuenta.dias} días` : 'Vencida'}</span>
-                          </div>
-                          <span className="text-lg font-bold text-white">{formatCurrency(cuenta.monto)}</span>
-                        </div>
-                        <button 
-                          onClick={() => { setPayForm({...payForm, proveedor: cuenta.proveedor, monto: cuenta.monto.toString()}); setActiveModal('pay'); }}
-                          className="mt-2 w-full py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs rounded-lg transition-colors"
-                        >
-                          Solicitar Pago
-                        </button>
-                      </div>
-                    ))}
+                  <div className="flex items-center gap-0.5 text-xs font-medium text-blue-500">
+                    <Wallet className="w-3 h-3" />
+                    Balance
                   </div>
                 </div>
-              )}
+                <h3 className="text-2xl font-bold text-white mb-0.5">
+                  {stats ? formatCurrency(stats.balance) : '---'}
+                </h3>
+                <p className="text-slate-400 text-sm">Balance neto</p>
+              </div>
 
-              {/* Side Panel - Movimientos Recientes */}
-              <div className="space-y-6">
-                <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-white">
-                      {role === 'contador' ? 'Últimos Asientos' : 'Movimientos Recientes'}
-                    </h3>
-                    <button 
-                      onClick={() => setActiveModal('viewAll')}
-                      className="text-sm text-emerald-500 hover:text-emerald-400"
-                    >
-                      Ver todo
-                    </button>
+              <div className="p-5 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-purple-500" />
                   </div>
-                  <div className="space-y-3">
-                    {movimientos.slice(0, 5).map((mov) => (
-                      <div key={mov.id} className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                          mov.tipo === 'ingreso' ? 'bg-emerald-500/20' : 'bg-red-500/20'
-                        }`}>
-                          {mov.tipo === 'ingreso' ? (
-                            <ArrowDownRight className="w-5 h-5 text-emerald-500" />
-                          ) : (
-                            <ArrowUpRight className="w-5 h-5 text-red-500" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-white truncate">{mov.cuenta}</p>
-                          <p className="text-xs text-slate-500">{mov.fecha} • {mov.referencia}</p>
-                        </div>
-                        <span className={`text-sm font-bold ${mov.tipo === 'ingreso' ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {mov.tipo === 'ingreso' ? '+' : '-'}{formatCurrency(mov.monto)}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="flex items-center gap-0.5 text-xs font-medium text-purple-500">
+                    <Calculator className="w-3 h-3" />
+                    Total
                   </div>
                 </div>
-
-                {/* Cuentas por Cobrar - Solo Admin/Socio */}
-                {(role === 'super_admin' || role === 'socio') && (
-                  <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-white">Cuentas por Cobrar</h3>
-                      <span className="text-xs text-slate-500">{cuentasPorCobrar.filter(c => c.estado === 'vencida').length} vencidas</span>
-                    </div>
-                    <div className="space-y-3">
-                      {cuentasPorCobrar.slice(0, 3).map((cuenta) => (
-                        <div key={cuenta.id} className={`p-3 rounded-xl ${
-                          cuenta.estado === 'vencida' ? 'bg-red-500/10 border border-red-500/20' : 'bg-slate-800/50'
-                        }`}>
-                          <div className="flex items-start justify-between mb-1">
-                            <span className="text-sm font-medium text-white">{cuenta.cliente}</span>
-                            <span className={`text-sm font-bold ${cuenta.estado === 'vencida' ? 'text-red-400' : 'text-emerald-400'}`}>
-                              {formatCurrency(cuenta.monto)}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-400">{cuenta.id}</span>
-                            <span className={cuenta.estado === 'vencida' ? 'text-red-400' : 'text-slate-500'}>
-                              {cuenta.estado === 'vencida' ? `${Math.abs(cuenta.dias)} días vencida` : `${cuenta.dias} días`}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <h3 className="text-2xl font-bold text-white mb-0.5">
+                  {stats ? stats.totalAsientos : '---'}
+                </h3>
+                <p className="text-slate-400 text-sm">Asientos registrados</p>
               </div>
             </div>
 
-            {/* Info del rol */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="mt-6 p-4 bg-slate-900/40 border border-slate-800 rounded-xl"
-            >
-              <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-lg ${roleConfig.bgColor}`}>
-                  {role === 'super_admin' || role === 'socio' ? <Crown className="w-5 h-5" /> :
-                   role === 'contador' ? <Calculator className="w-5 h-5" /> :
-                   <UserCheck className="w-5 h-5" />}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-medium text-white">
-                      {getRoleMessage().title}
-                    </h4>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${roleConfig.bgColor} ${roleConfig.textColor}`}>
-                      {roleConfig.name}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    {getRoleMessage().description}
-                  </p>
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Evolution Chart */}
+              <div className="p-6 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                <h3 className="text-lg font-semibold text-white mb-4">Evolución Financiera</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={evolutionData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                      <XAxis dataKey="name" stroke="#94a3b8" />
+                      <YAxis stroke="#94a3b8" tickFormatter={(value) => formatCurrency(value)} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+                        formatter={(value: number) => formatCurrency(value)}
+                      />
+                      <Line type="monotone" dataKey="value" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981' }} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
-            </motion.div>
-          </>
+
+              {/* Distribution Chart */}
+              <div className="p-6 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                <h3 className="text-lg font-semibold text-white mb-4">Distribución por Tipo</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RePieChart>
+                      <Pie
+                        data={tipoDistribution}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {tipoDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px' }}
+                      />
+                      <Legend />
+                    </RePieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Accounts Summary */}
+            <div className="p-6 bg-slate-900/60 border border-slate-800 rounded-2xl">
+              <h3 className="text-lg font-semibold text-white mb-4">Resumen por Cuenta</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {cuentas.slice(0, 6).map((cuenta) => (
+                  <div key={cuenta.codigo} className="p-4 bg-slate-800/50 rounded-xl">
+                    <p className="text-xs text-slate-500 mb-1">{cuenta.codigo}</p>
+                    <p className="text-sm font-medium text-white mb-2 truncate">{cuenta.nombre}</p>
+                    <p className={`text-lg font-bold ${cuenta.total >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {formatCurrency(cuenta.total)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
         )}
 
-        {/* Otros tabs se pueden implementar aquí */}
-        {activeTab !== 'overview' && (
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-8 text-center">
-            <FileText className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-white mb-2">Sección en Desarrollo</h3>
-            <p className="text-sm text-slate-400">
-              La pestaña "{availableTabs.find(t => t.id === activeTab)?.label}" estará disponible próximamente.
-            </p>
-          </div>
+        {/* ASIENTOS TAB */}
+        {activeTab === 'asientos' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            {/* Filters */}
+            <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl space-y-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex-1 min-w-[200px]">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por concepto o número..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm"
+                    />
+                  </div>
+                </div>
+
+                <select
+                  value={tipoFilter}
+                  onChange={(e) => setTipoFilter(e.target.value as TipoAsiento | '')}
+                  className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm"
+                >
+                  <option value="">Todos los tipos</option>
+                  <option value="INGRESO">Ingreso</option>
+                  <option value="EGRESO">Egreso</option>
+                  <option value="TRASPASO">Traspaso</option>
+                  <option value="AJUSTE">Ajuste</option>
+                </select>
+
+                <input
+                  type="date"
+                  value={fechaDesde}
+                  onChange={(e) => setFechaDesde(e.target.value)}
+                  className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm"
+                  placeholder="Desde"
+                />
+
+                <input
+                  type="date"
+                  value={fechaHasta}
+                  onChange={(e) => setFechaHasta(e.target.value)}
+                  className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm"
+                  placeholder="Hasta"
+                />
+
+                <button
+                  onClick={clearFilters}
+                  className="flex items-center gap-2 px-4 py-2 text-slate-400 hover:text-white transition-colors"
+                >
+                  <Filter className="w-4 h-4" />
+                  Limpiar
+                </button>
+              </div>
+            </div>
+
+            {/* Asientos Table */}
+            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-800">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Número</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Fecha</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Concepto</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Tipo</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Cuenta</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Importe</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-slate-400 uppercase">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
+                          Cargando...
+                        </td>
+                      </tr>
+                    ) : asientos.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
+                          No se encontraron asientos contables
+                        </td>
+                      </tr>
+                    ) : (
+                      asientos.map((asiento) => (
+                        <tr key={asiento.id} className="hover:bg-slate-800/50 transition-colors">
+                          <td className="px-4 py-3 text-sm text-white font-mono">{asiento.numero}</td>
+                          <td className="px-4 py-3 text-sm text-slate-300">{formatDate(asiento.fecha)}</td>
+                          <td className="px-4 py-3 text-sm text-white">{asiento.concepto}</td>
+                          <td className="px-4 py-3">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              asiento.tipo === 'INGRESO' ? 'bg-emerald-500/20 text-emerald-400' :
+                              asiento.tipo === 'EGRESO' ? 'bg-red-500/20 text-red-400' :
+                              asiento.tipo === 'TRASPASO' ? 'bg-blue-500/20 text-blue-400' :
+                              'bg-amber-500/20 text-amber-400'
+                            }`}>
+                              {asiento.tipo}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-slate-300">{asiento.cuentaCodigo} - {asiento.cuentaNombre}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-right ${asiento.tipo === 'INGRESO' ? 'text-emerald-400' : asiento.tipo === 'EGRESO' ? 'text-red-400' : 'text-white'}">
+                            {formatCurrency(asiento.importe)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => handleViewAsiento(asiento)}
+                                className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+                                title="Ver detalle"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              {permissions.canDelete && (
+                                <button
+                                  onClick={() => handleDeleteClick(asiento)}
+                                  className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                                  title="Eliminar"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between px-4 py-3 border-t border-slate-800">
+                <div className="text-sm text-slate-400">
+                  Página {currentPage} de {totalPages}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="p-2 text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-lg hover:bg-slate-800"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const page = i + 1;
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => handlePageChange(page)}
+                        className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                          currentPage === page
+                            ? 'bg-emerald-500 text-slate-950'
+                            : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed rounded-lg hover:bg-slate-800"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* LIBRO MAYOR TAB */}
+        {activeTab === 'libro-mayor' && permissions.canViewLibroMayor && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            {/* Account Selector */}
+            <div className="p-4 bg-slate-900/60 border border-slate-800 rounded-2xl">
+              <div className="flex flex-wrap items-center gap-3">
+                <select
+                  value={cuentaFilter}
+                  onChange={(e) => setCuentaFilter(e.target.value)}
+                  className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm min-w-[300px]"
+                >
+                  <option value="">Seleccione una cuenta...</option>
+                  {cuentas.map((cuenta) => (
+                    <option key={cuenta.codigo} value={cuenta.codigo}>
+                      {cuenta.codigo} - {cuenta.nombre}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  type="date"
+                  value={fechaDesde}
+                  onChange={(e) => setFechaDesde(e.target.value)}
+                  className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm"
+                />
+
+                <input
+                  type="date"
+                  value={fechaHasta}
+                  onChange={(e) => setFechaHasta(e.target.value)}
+                  className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Libro Mayor Content */}
+            {isLoadingLibroMayor ? (
+              <div className="p-8 text-center text-slate-400">
+                Cargando libro mayor...
+              </div>
+            ) : libroMayor ? (
+              <div className="space-y-4">
+                {/* Account Header */}
+                <div className="p-6 bg-slate-900/60 border border-slate-800 rounded-2xl">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-slate-500 mb-1">{libroMayor.codigo}</p>
+                      <h3 className="text-xl font-bold text-white">{libroMayor.nombre}</h3>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-slate-500 mb-1">Saldo Total</p>
+                      <p className={`text-2xl font-bold ${libroMayor.total >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {formatCurrency(libroMayor.total)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Entries Table */}
+                <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-slate-800">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Fecha</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Concepto</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase">Referencia</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Debe</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Haber</th>
+                        <th className="px-4 py-3 text-right text-xs font-medium text-slate-400 uppercase">Saldo</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800">
+                      {libroMayor.asientos.map((asiento, index) => {
+                        const runningBalance = libroMayor.asientos
+                          .slice(0, index + 1)
+                          .reduce((acc, a) => acc + (a.importeDebe || 0) - (a.importeHaber || 0), 0);
+                        
+                        return (
+                          <tr key={asiento.id} className="hover:bg-slate-800/50 transition-colors">
+                            <td className="px-4 py-3 text-sm text-slate-300">{formatDate(asiento.fecha)}</td>
+                            <td className="px-4 py-3 text-sm text-white">{asiento.concepto}</td>
+                            <td className="px-4 py-3 text-sm text-slate-400">{asiento.documentoRef || '-'}</td>
+                            <td className="px-4 py-3 text-sm text-right text-emerald-400">
+                              {asiento.importeDebe ? formatCurrency(asiento.importeDebe) : '-'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-right text-red-400">
+                              {asiento.importeHaber ? formatCurrency(asiento.importeHaber) : '-'}
+                            </td>
+                            <td className="px-4 py-3 text-sm text-right font-medium text-white">
+                              {formatCurrency(runningBalance)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className="p-8 text-center text-slate-400">
+                Seleccione una cuenta para ver el libro mayor
+              </div>
+            )}
+          </motion.div>
         )}
       </main>
 
@@ -815,13 +820,13 @@ export default function Contabilidad() {
             } text-slate-950 font-medium`}
           >
             {toast.type === 'success' ? <CheckCircle className="w-5 h-5" /> : 
-             toast.type === 'error' ? <AlertCircle className="w-5 h-5" /> : <Info className="w-5 h-5" />}
+             toast.type === 'error' ? <AlertCircle className="w-5 h-5" /> : <Receipt className="w-5 h-5" />}
             {toast.message}
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Modal Nueva Póliza */}
+      {/* Modal: Nuevo Asiento */}
       <AnimatePresence>
         {showNewEntryModal && (
           <motion.div
@@ -835,84 +840,152 @@ export default function Contabilidad() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6"
+              className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">
-                  {role === 'contador' ? 'Nueva Póliza Contable' : 'Nuevo Asiento'}
-                </h2>
-                <button onClick={() => setShowNewEntryModal(false)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
+                <h2 className="text-xl font-bold text-white">Nuevo Asiento Contable</h2>
+                <button 
+                  onClick={() => setShowNewEntryModal(false)} 
+                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
+
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm text-slate-400 mb-2">Tipo de Movimiento</label>
-                  <select 
-                    value={newEntryForm.tipo}
-                    onChange={(e) => setNewEntryForm({...newEntryForm, tipo: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white"
-                  >
-                    <option value="">Seleccionar...</option>
-                    <option value="Ingreso">Ingreso</option>
-                    <option value="Egreso">Egreso</option>
-                    <option value="Traspaso">Traspaso</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm text-slate-400 mb-2">Cuenta Contable</label>
-                  <select 
-                    value={newEntryForm.cuenta}
-                    onChange={(e) => setNewEntryForm({...newEntryForm, cuenta: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white"
-                  >
-                    <option value="">Seleccionar cuenta...</option>
-                    <option value="4000 - Ingresos por honorarios">4000 - Ingresos por honorarios</option>
-                    <option value="4100 - Servicios legales">4100 - Servicios legales</option>
-                    <option value="5000 - Gastos operativos">5000 - Gastos operativos</option>
-                    <option value="5100 - Nómina">5100 - Nómina</option>
-                    <option value="5200 - Renta oficina">5200 - Renta oficina</option>
-                  </select>
-                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-slate-400 mb-2">Importe (€)</label>
-                    <input 
-                      type="number" 
-                      value={newEntryForm.monto}
-                      onChange={(e) => setNewEntryForm({...newEntryForm, monto: e.target.value})}
-                      placeholder="0.00" 
-                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white" 
+                    <label className="block text-sm text-slate-400 mb-2">Número *</label>
+                    <input
+                      type="text"
+                      value={newEntryForm.numero}
+                      onChange={(e) => setNewEntryForm({...newEntryForm, numero: e.target.value})}
+                      placeholder="Ej: 001-2024"
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-slate-400 mb-2">Fecha</label>
-                    <input 
-                      type="date" 
+                    <label className="block text-sm text-slate-400 mb-2">Fecha *</label>
+                    <input
+                      type="date"
                       value={newEntryForm.fecha}
                       onChange={(e) => setNewEntryForm({...newEntryForm, fecha: e.target.value})}
-                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white" 
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white"
                     />
                   </div>
                 </div>
+
                 <div>
-                  <label className="block text-sm text-slate-400 mb-2">Concepto</label>
-                  <textarea
+                  <label className="block text-sm text-slate-400 mb-2">Concepto *</label>
+                  <input
+                    type="text"
                     value={newEntryForm.concepto}
                     onChange={(e) => setNewEntryForm({...newEntryForm, concepto: e.target.value})}
-                    placeholder="Descripción del movimiento..."
-                    rows={3}
-                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white resize-none"
+                    placeholder="Descripción del asiento..."
+                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-slate-400 mb-2">Tipo *</label>
+                    <select
+                      value={newEntryForm.tipo}
+                      onChange={(e) => setNewEntryForm({...newEntryForm, tipo: e.target.value as TipoAsiento})}
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white"
+                    >
+                      <option value="INGRESO">Ingreso</option>
+                      <option value="EGRESO">Egreso</option>
+                      <option value="TRASPASO">Traspaso</option>
+                      <option value="AJUSTE">Ajuste</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-slate-400 mb-2">Importe *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newEntryForm.importe}
+                      onChange={(e) => setNewEntryForm({...newEntryForm, importe: e.target.value})}
+                      placeholder="0.00"
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-400 mb-2">Cuenta Contable *</label>
+                  <select
+                    value={newEntryForm.cuentaCodigo}
+                    onChange={(e) => {
+                      const cuenta = cuentas.find(c => c.codigo === e.target.value);
+                      setNewEntryForm({
+                        ...newEntryForm, 
+                        cuentaCodigo: e.target.value,
+                        cuentaNombre: cuenta?.nombre || ''
+                      });
+                    }}
+                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white"
+                  >
+                    <option value="">Seleccione una cuenta...</option>
+                    {cuentas.map((cuenta) => (
+                      <option key={cuenta.codigo} value={cuenta.codigo}>
+                        {cuenta.codigo} - {cuenta.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-slate-400 mb-2">Debe</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newEntryForm.importeDebe}
+                      onChange={(e) => setNewEntryForm({...newEntryForm, importeDebe: e.target.value})}
+                      placeholder="0.00"
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-slate-400 mb-2">Haber</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newEntryForm.importeHaber}
+                      onChange={(e) => setNewEntryForm({...newEntryForm, importeHaber: e.target.value})}
+                      placeholder="0.00"
+                      className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-slate-400 mb-2">Documento de Referencia</label>
+                  <input
+                    type="text"
+                    value={newEntryForm.documentoRef}
+                    onChange={(e) => setNewEntryForm({...newEntryForm, documentoRef: e.target.value})}
+                    placeholder="Número de factura, recibo, etc."
+                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white"
                   />
                 </div>
               </div>
+
               <div className="flex gap-3 mt-6">
-                <button onClick={() => setShowNewEntryModal(false)} className="flex-1 px-4 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-700">
+                <button 
+                  onClick={() => setShowNewEntryModal(false)} 
+                  className="flex-1 px-4 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-700"
+                >
                   Cancelar
                 </button>
-                <button onClick={handleRegisterEntry} className="flex-1 px-4 py-2.5 bg-emerald-500 text-slate-950 font-medium rounded-xl hover:bg-emerald-400">
-                  Registrar
+                <button 
+                  onClick={handleCreateAsiento} 
+                  className="flex-1 px-4 py-2.5 bg-emerald-500 text-slate-950 font-medium rounded-xl hover:bg-emerald-400"
+                >
+                  Guardar
                 </button>
               </div>
             </motion.div>
@@ -920,15 +993,120 @@ export default function Contabilidad() {
         )}
       </AnimatePresence>
 
-      {/* Modal: Exportar Balance */}
+      {/* Modal: Ver Asiento */}
       <AnimatePresence>
-        {activeModal === 'export' && (
+        {showViewModal && selectedAsiento && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setActiveModal(null)}
+            onClick={() => setShowViewModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white">Detalle del Asiento</h2>
+                <button 
+                  onClick={() => setShowViewModal(false)} 
+                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl">
+                  <span className="text-slate-400">Número</span>
+                  <span className="text-white font-mono">{selectedAsiento.numero}</span>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl">
+                  <span className="text-slate-400">Fecha</span>
+                  <span className="text-white">{formatDate(selectedAsiento.fecha)}</span>
+                </div>
+
+                <div className="p-3 bg-slate-800/50 rounded-xl">
+                  <span className="text-slate-400 block mb-1">Concepto</span>
+                  <span className="text-white">{selectedAsiento.concepto}</span>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl">
+                  <span className="text-slate-400">Tipo</span>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    selectedAsiento.tipo === 'INGRESO' ? 'bg-emerald-500/20 text-emerald-400' :
+                    selectedAsiento.tipo === 'EGRESO' ? 'bg-red-500/20 text-red-400' :
+                    selectedAsiento.tipo === 'TRASPASO' ? 'bg-blue-500/20 text-blue-400' :
+                    'bg-amber-500/20 text-amber-400'
+                  }`}>
+                    {selectedAsiento.tipo}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl">
+                  <span className="text-slate-400">Importe</span>
+                  <span className="text-xl font-bold text-white">{formatCurrency(selectedAsiento.importe)}</span>
+                </div>
+
+                <div className="p-3 bg-slate-800/50 rounded-xl">
+                  <span className="text-slate-400 block mb-1">Cuenta</span>
+                  <span className="text-white">{selectedAsiento.cuentaCodigo} - {selectedAsiento.cuentaNombre}</span>
+                </div>
+
+                {selectedAsiento.documentoRef && (
+                  <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl">
+                    <span className="text-slate-400">Documento Ref.</span>
+                    <span className="text-white">{selectedAsiento.documentoRef}</span>
+                  </div>
+                )}
+
+                {selectedAsiento.factura && (
+                  <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl">
+                    <span className="text-slate-400">Factura Relacionada</span>
+                    <span className="text-white">{selectedAsiento.factura.numero} - {formatCurrency(selectedAsiento.factura.importe)}</span>
+                  </div>
+                )}
+
+                {selectedAsiento.gasto && (
+                  <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl">
+                    <span className="text-slate-400">Gasto Relacionado</span>
+                    <span className="text-white">{selectedAsiento.gasto.concepto} - {formatCurrency(selectedAsiento.gasto.importe)}</span>
+                  </div>
+                )}
+
+                {selectedAsiento.usuario && (
+                  <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl">
+                    <span className="text-slate-400">Creado por</span>
+                    <span className="text-white">{selectedAsiento.usuario.nombre} {selectedAsiento.usuario.apellido1 || ''}</span>
+                  </div>
+                )}
+              </div>
+
+              <button 
+                onClick={() => setShowViewModal(false)} 
+                className="w-full mt-6 px-4 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-700"
+              >
+                Cerrar
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal: Confirmar Eliminación */}
+      <AnimatePresence>
+        {showDeleteModal && selectedAsiento && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowDeleteModal(false)}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -937,240 +1115,30 @@ export default function Contabilidad() {
               className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Exportar Balance</h2>
-                <button onClick={() => setActiveModal(null)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
-                  <X className="w-5 h-5" />
-                </button>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 mx-auto mb-4 bg-red-500/20 rounded-full flex items-center justify-center">
+                  <Trash2 className="w-8 h-8 text-red-500" />
+                </div>
+                <h2 className="text-xl font-bold text-white mb-2">¿Eliminar Asiento?</h2>
+                <p className="text-slate-400">
+                  Estás a punto de eliminar el asiento <strong className="text-white">{selectedAsiento.numero}</strong>. 
+                  Esta acción no se puede deshacer.
+                </p>
               </div>
-              <div className="space-y-3">
-                <button onClick={handleExport} className="w-full flex items-center gap-3 p-4 bg-slate-800/50 border border-slate-700 rounded-xl hover:border-emerald-500/30 transition-all">
-                  <FileText className="w-6 h-6 text-emerald-500" />
-                  <div className="text-left">
-                    <p className="text-white font-medium">Exportar como PDF</p>
-                    <p className="text-xs text-slate-400">Documento formal del balance</p>
-                  </div>
-                </button>
-                <button onClick={handleExport} className="w-full flex items-center gap-3 p-4 bg-slate-800/50 border border-slate-700 rounded-xl hover:border-emerald-500/30 transition-all">
-                  <Calculator className="w-6 h-6 text-blue-500" />
-                  <div className="text-left">
-                    <p className="text-white font-medium">Exportar a Excel</p>
-                    <p className="text-xs text-slate-400">Datos para análisis</p>
-                  </div>
-                </button>
-                <button onClick={handleExport} className="w-full flex items-center gap-3 p-4 bg-slate-800/50 border border-slate-700 rounded-xl hover:border-emerald-500/30 transition-all">
-                  <Printer className="w-6 h-6 text-amber-500" />
-                  <div className="text-left">
-                    <p className="text-white font-medium">Imprimir</p>
-                    <p className="text-xs text-slate-400">Enviar a impresora</p>
-                  </div>
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* Modal: Generar Declaración */}
-      <AnimatePresence>
-        {activeModal === 'declare' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setActiveModal(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Generar Declaración Fiscal</h2>
-                <button onClick={() => setActiveModal(null)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="space-y-4">
-                <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                  <p className="text-sm text-amber-400 font-medium">IVA - Febrero 2026</p>
-                  <div className="grid grid-cols-3 gap-4 mt-3 text-sm">
-                    <div>
-                      <p className="text-slate-500 text-xs">IVA Cobrado</p>
-                      <p className="text-white font-bold">{formatCurrency(balanceData.ivaRecaudado)}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500 text-xs">IVA Pagado</p>
-                      <p className="text-white font-bold">{formatCurrency(balanceData.ivaPagado)}</p>
-                    </div>
-                    <div>
-                      <p className="text-slate-500 text-xs">Por Pagar</p>
-                      <p className="text-amber-400 font-bold">{formatCurrency(balanceData.ivaPorPagar)}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm text-slate-400 mb-2">Tipo de declaración</label>
-                  <select className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white">
-                    <option>IVA - Mensual</option>
-                    <option>IVA - Trimestral</option>
-                    <option>Retenciones ISR</option>
-                    <option>Modelo 347</option>
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm text-slate-400 mb-2">Período</label>
-                  <select className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white">
-                    <option>Febrero 2026</option>
-                    <option>Enero 2026</option>
-                    <option>Diciembre 2025</option>
-                  </select>
-                </div>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <button onClick={() => setActiveModal(null)} className="flex-1 px-4 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-700">
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowDeleteModal(false)} 
+                  className="flex-1 px-4 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-700"
+                >
                   Cancelar
                 </button>
-                <button onClick={handleGenerateDeclaration} className="flex-1 px-4 py-2.5 bg-amber-500 text-slate-950 font-medium rounded-xl hover:bg-amber-400 flex items-center justify-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Generar
+                <button 
+                  onClick={handleDeleteAsiento} 
+                  className="flex-1 px-4 py-2.5 bg-red-500 text-white font-medium rounded-xl hover:bg-red-400"
+                >
+                  Eliminar
                 </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal: Solicitar Pago */}
-      <AnimatePresence>
-        {activeModal === 'pay' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setActiveModal(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-white">Solicitar Pago a Proveedor</h2>
-                <button onClick={() => setActiveModal(null)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm text-slate-400 mb-2">Proveedor</label>
-                  <input 
-                    type="text" 
-                    value={payForm.proveedor}
-                    onChange={(e) => setPayForm({...payForm, proveedor: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-slate-400 mb-2">Monto a pagar (€)</label>
-                  <input 
-                    type="number" 
-                    value={payForm.monto}
-                    onChange={(e) => setPayForm({...payForm, monto: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-slate-400 mb-2">Método de pago</label>
-                  <select 
-                    value={payForm.metodo}
-                    onChange={(e) => setPayForm({...payForm, metodo: e.target.value})}
-                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white"
-                  >
-                    <option value="transferencia">Transferencia bancaria</option>
-                    <option value="cheque">Cheque</option>
-                    <option value="efectivo">Efectivo</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm text-slate-400 mb-2">Notas</label>
-                  <textarea
-                    value={payForm.notas}
-                    onChange={(e) => setPayForm({...payForm, notas: e.target.value})}
-                    placeholder="Notas adicionales..."
-                    rows={2}
-                    className="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white resize-none"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <button onClick={() => setActiveModal(null)} className="flex-1 px-4 py-2.5 bg-slate-800 text-white rounded-xl hover:bg-slate-700">
-                  Cancelar
-                </button>
-                <button onClick={handlePay} className="flex-1 px-4 py-2.5 bg-emerald-500 text-slate-950 font-medium rounded-xl hover:bg-emerald-400 flex items-center justify-center gap-2">
-                  <Send className="w-4 h-4" />
-                  Procesar Pago
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Modal: Ver Todos los Movimientos */}
-      <AnimatePresence>
-        {activeModal === 'viewAll' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setActiveModal(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between p-6 border-b border-slate-800">
-                <h2 className="text-xl font-bold text-white">Todos los Movimientos</h2>
-                <button onClick={() => setActiveModal(null)} className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="space-y-3">
-                  {movimientos.map((mov) => (
-                    <div key={mov.id} className="flex items-center gap-3 p-4 bg-slate-800/50 rounded-xl">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        mov.tipo === 'ingreso' ? 'bg-emerald-500/20' : 'bg-red-500/20'
-                      }`}>
-                        {mov.tipo === 'ingreso' ? (
-                          <ArrowDownRight className="w-5 h-5 text-emerald-500" />
-                        ) : (
-                          <ArrowUpRight className="w-5 h-5 text-red-500" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-white">{mov.cuenta}</p>
-                        <p className="text-xs text-slate-500">{mov.fecha} • {mov.referencia}</p>
-                      </div>
-                      <span className={`text-sm font-bold ${mov.tipo === 'ingreso' ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {mov.tipo === 'ingreso' ? '+' : '-'}{formatCurrency(mov.monto)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
               </div>
             </motion.div>
           </motion.div>

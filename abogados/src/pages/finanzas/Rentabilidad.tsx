@@ -6,45 +6,86 @@ import { motion } from 'framer-motion';
 import { 
   TrendingUp, TrendingDown, DollarSign, Briefcase, Users,
   BarChart3, PieChart, Download, Filter, Calendar,
-  ArrowUpRight, ArrowDownRight, Target
+  ArrowUpRight, ArrowDownRight, Target, Loader2
 } from 'lucide-react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/components/ui/Toast';
-import { Button } from '@/components/ui/Button';
-import { Input, Select } from '@/components/ui/Form';
-import { Card, Badge } from '@/components/ui';
-import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
-import { StatsSkeleton, TableSkeleton } from '@/components/ui/Skeleton';
 import { AppLayout } from '@/components/layout/AppLayout';
-
-// Datos mock
-const rentabilidadPorCasoMock = [
-  { id: 'EXP-2024-001', caso: 'Demanda laboral - García', abogado: 'María González', facturado: 8500, coste: 3200, margen: 62, estado: 'excellent' },
-  { id: 'EXP-2024-002', caso: 'Divorcio - Martínez', abogado: 'Carlos Ruiz', facturado: 4200, coste: 2800, margen: 33, estado: 'fair' },
-  { id: 'EXP-2024-003', caso: 'Contrato TechCorp', abogado: 'Ana López', facturado: 15000, coste: 4500, margen: 70, estado: 'excellent' },
-  { id: 'EXP-2024-004', caso: 'Reclamación deuda', abogado: 'María González', facturado: 2500, coste: 2200, margen: 12, estado: 'poor' },
-  { id: 'EXP-2024-005', caso: 'Accidente Sánchez', abogado: 'Javier Martínez', facturado: 6800, coste: 3500, margen: 49, estado: 'good' },
-];
-
-const rentabilidadPorAbogadoMock = [
-  { abogado: 'María González', casos: 12, facturado: 45000, coste: 18000, margen: 60, horas: 320 },
-  { abogado: 'Carlos Ruiz', casos: 8, facturado: 28000, coste: 14000, margen: 50, horas: 210 },
-  { abogado: 'Ana López', casos: 15, facturado: 68000, coste: 22000, margen: 68, horas: 380 },
-  { abogado: 'Javier Martínez', casos: 6, facturado: 18000, coste: 12000, margen: 33, horas: 150 },
-];
-
-const kpisMock = {
-  facturacionTotal: 159000,
-  costeTotal: 66000,
-  margenPromedio: 53,
-  casosRentables: 4,
-  casosNoRentables: 1,
-};
+import { rentabilidadService, RentabilidadCaso, RentabilidadAbogado, RentabilidadKPIs } from '@/services/rentabilidadService';
 
 export default function FinanzasRentabilidad() {
   const [view, setView] = useState<'casos' | 'abogados'>('casos');
   const [periodo, setPeriodo] = useState('2024');
+  const [loading, setLoading] = useState(true);
+  const [exportando, setExportando] = useState(false);
+  
+  // Datos de la API
+  const [kpis, setKpis] = useState<RentabilidadKPIs | null>(null);
+  const [rentabilidadPorCaso, setRentabilidadPorCaso] = useState<RentabilidadCaso[]>([]);
+  const [rentabilidadPorAbogado, setRentabilidadPorAbogado] = useState<RentabilidadAbogado[]>([]);
+  
+  const { showToast } = useToast();
+
+  // Cargar datos al cambiar el período
+  useEffect(() => {
+    cargarDatos();
+  }, [periodo]);
+
+  const cargarDatos = async () => {
+    setLoading(true);
+    try {
+      const [kpisRes, casosRes, abogadosRes] = await Promise.all([
+        rentabilidadService.getKPIs({ periodo }),
+        rentabilidadService.getRentabilidadPorCaso({ periodo, limit: 100 }),
+        rentabilidadService.getRentabilidadPorAbogado({ periodo }),
+      ]);
+
+      if (kpisRes.success) {
+        setKpis(kpisRes.data);
+      }
+      
+      if (casosRes.success) {
+        setRentabilidadPorCaso(casosRes.data);
+      }
+      
+      if (abogadosRes.success) {
+        setRentabilidadPorAbogado(abogadosRes.data);
+      }
+    } catch (error) {
+      console.error('Error cargando datos de rentabilidad:', error);
+      showToast({
+        type: 'error',
+        title: 'Error',
+        message: 'No se pudieron cargar los datos de rentabilidad',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExportar = async (formato: 'pdf' | 'excel') => {
+    setExportando(true);
+    try {
+      const response = await rentabilidadService.exportarReporte(view, formato, { periodo });
+      if (response.success) {
+        // Descargar el archivo
+        window.open(response.url, '_blank');
+        showToast({
+          type: 'success',
+          title: 'Éxito',
+          message: `Reporte exportado en formato ${formato.toUpperCase()}`,
+        });
+      }
+    } catch (error) {
+      console.error('Error exportando reporte:', error);
+      showToast({
+        type: 'error',
+        title: 'Error',
+        message: 'No se pudo exportar el reporte',
+      });
+    } finally {
+      setExportando(false);
+    }
+  };
 
   const getMargenColor = (margen: number) => {
     if (margen >= 50) return 'text-emerald-400';
@@ -62,6 +103,16 @@ export default function FinanzasRentabilidad() {
     return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(amount);
   };
 
+  const getEstadoTexto = (estado: string) => {
+    switch (estado) {
+      case 'excellent': return 'Muy rentable';
+      case 'good': return 'Rentable';
+      case 'fair': return 'Regular';
+      case 'poor': return 'No rentable';
+      default: return estado;
+    }
+  };
+
   return (
     <AppLayout title="Rentabilidad" subtitle="Análisis de rentabilidad por caso y abogado">
     <div className="p-6 space-y-6">
@@ -76,75 +127,118 @@ export default function FinanzasRentabilidad() {
             value={periodo}
             onChange={(e) => setPeriodo(e.target.value)}
             className="px-4 py-2 bg-theme-card border border-theme rounded-xl text-theme-primary"
+            disabled={loading}
           >
             <option value="2024">2024</option>
             <option value="2023">2023</option>
             <option value="2022">2022</option>
+            <option value="2021">2021</option>
           </select>
-          <button className="flex items-center gap-2 px-4 py-2 bg-theme-card border border-theme text-theme-secondary rounded-xl hover:text-theme-primary">
-            <Download className="w-4 h-4" />
-            Exportar
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => handleExportar('pdf')}
+              disabled={exportando || loading}
+              className="flex items-center gap-2 px-4 py-2 bg-theme-card border border-theme text-theme-secondary rounded-xl hover:text-theme-primary disabled:opacity-50"
+            >
+              {exportando ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              Exportar PDF
+            </button>
+          </div>
+          <div className="relative">
+            <button 
+              onClick={() => handleExportar('excel')}
+              disabled={exportando || loading}
+              className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-xl hover:bg-accent/90 disabled:opacity-50"
+            >
+              {exportando ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              Exportar Excel
+            </button>
+          </div>
         </div>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-theme-card border border-theme rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-              <DollarSign className="w-5 h-5 text-emerald-400" />
+        {loading ? (
+          // Skeleton loading
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="bg-theme-card border border-theme rounded-xl p-4 animate-pulse">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-theme-tertiary rounded-xl"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-theme-tertiary rounded w-24 mb-2"></div>
+                  <div className="h-6 bg-theme-tertiary rounded w-20"></div>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-theme-secondary">Facturación Total</p>
-              <p className="text-xl font-bold text-theme-primary">{formatCurrency(kpisMock.facturacionTotal)}</p>
+          ))
+        ) : kpis ? (
+          <>
+            <div className="bg-theme-card border border-theme rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-theme-secondary">Facturación Total</p>
+                  <p className="text-xl font-bold text-theme-primary">{formatCurrency(kpis.facturacionTotal)}</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        <div className="bg-theme-card border border-theme rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center">
-              <TrendingDown className="w-5 h-5 text-red-400" />
+            <div className="bg-theme-card border border-theme rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center">
+                  <TrendingDown className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-theme-secondary">Coste Total</p>
+                  <p className="text-xl font-bold text-theme-primary">{formatCurrency(kpis.costeTotal)}</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-theme-secondary">Coste Total</p>
-              <p className="text-xl font-bold text-theme-primary">{formatCurrency(kpisMock.costeTotal)}</p>
+            <div className="bg-theme-card border border-theme rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                  <BarChart3 className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-theme-secondary">Margen Promedio</p>
+                  <p className="text-xl font-bold text-theme-primary">{kpis.margenPromedio}%</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        <div className="bg-theme-card border border-theme rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
-              <BarChart3 className="w-5 h-5 text-blue-400" />
+            <div className="bg-theme-card border border-theme rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
+                  <ArrowUpRight className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-theme-secondary">Casos Rentables</p>
+                  <p className="text-xl font-bold text-emerald-400">{kpis.casosRentables}</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <p className="text-sm text-theme-secondary">Margen Promedio</p>
-              <p className="text-xl font-bold text-theme-primary">{kpisMock.margenPromedio}%</p>
+            <div className="bg-theme-card border border-theme rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center">
+                  <ArrowDownRight className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-theme-secondary">Casos No Rentables</p>
+                  <p className="text-xl font-bold text-red-400">{kpis.casosNoRentables}</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        <div className="bg-theme-card border border-theme rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-500/20 rounded-xl flex items-center justify-center">
-              <ArrowUpRight className="w-5 h-5 text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-sm text-theme-secondary">Casos Rentables</p>
-              <p className="text-xl font-bold text-emerald-400">{kpisMock.casosRentables}</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-theme-card border border-theme rounded-xl p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center">
-              <ArrowDownRight className="w-5 h-5 text-red-400" />
-            </div>
-            <div>
-              <p className="text-sm text-theme-secondary">Casos No Rentables</p>
-              <p className="text-xl font-bold text-red-400">{kpisMock.casosNoRentables}</p>
-            </div>
-          </div>
-        </div>
+          </>
+        ) : null}
       </div>
 
       {/* Toggle view */}
@@ -184,32 +278,48 @@ export default function FinanzasRentabilidad() {
               </tr>
             </thead>
             <tbody>
-              {rentabilidadPorCasoMock.map((item) => (
-                <motion.tr
-                  key={item.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="border-t border-theme hover:bg-theme-tertiary/30"
-                >
-                  <td className="p-4">
-                    <div>
-                      <p className="font-medium text-theme-primary">{item.caso}</p>
-                      <p className="text-xs text-theme-muted">{item.id}</p>
-                    </div>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-t border-theme">
+                    <td className="p-4" colSpan={6}>
+                      <div className="h-12 bg-theme-tertiary/30 rounded animate-pulse"></div>
+                    </td>
+                  </tr>
+                ))
+              ) : rentabilidadPorCaso.length === 0 ? (
+                <tr>
+                  <td className="p-8 text-center text-theme-secondary" colSpan={6}>
+                    No hay datos de rentabilidad para este período
                   </td>
-                  <td className="p-4 text-theme-secondary">{item.abogado}</td>
-                  <td className="p-4 text-right text-theme-primary font-medium">{formatCurrency(item.facturado)}</td>
-                  <td className="p-4 text-right text-theme-secondary">{formatCurrency(item.coste)}</td>
-                  <td className="p-4 text-right">
-                    <span className={`font-medium ${getMargenColor(item.margen)}`}>{item.margen}%</span>
-                  </td>
-                  <td className="p-4 text-center">
-                    <span className={`px-2 py-1 text-xs rounded-full ${getMargenBg(item.margen)} ${getMargenColor(item.margen)}`}>
-                      {item.margen >= 50 ? 'Rentable' : item.margen >= 30 ? 'Regular' : 'No rentable'}
-                    </span>
-                  </td>
-                </motion.tr>
-              ))}
+                </tr>
+              ) : (
+                rentabilidadPorCaso.map((item) => (
+                  <motion.tr
+                    key={item.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="border-t border-theme hover:bg-theme-tertiary/30"
+                  >
+                    <td className="p-4">
+                      <div>
+                        <p className="font-medium text-theme-primary">{item.caso}</p>
+                        <p className="text-xs text-theme-muted">{item.numeroExpediente}</p>
+                      </div>
+                    </td>
+                    <td className="p-4 text-theme-secondary">{item.abogado}</td>
+                    <td className="p-4 text-right text-theme-primary font-medium">{formatCurrency(item.facturado)}</td>
+                    <td className="p-4 text-right text-theme-secondary">{formatCurrency(item.coste)}</td>
+                    <td className="p-4 text-right">
+                      <span className={`font-medium ${getMargenColor(item.margen)}`}>{item.margen}%</span>
+                    </td>
+                    <td className="p-4 text-center">
+                      <span className={`px-2 py-1 text-xs rounded-full ${getMargenBg(item.margen)} ${getMargenColor(item.margen)}`}>
+                        {getEstadoTexto(item.estado)}
+                      </span>
+                    </td>
+                  </motion.tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -230,30 +340,46 @@ export default function FinanzasRentabilidad() {
               </tr>
             </thead>
             <tbody>
-              {rentabilidadPorAbogadoMock.map((item) => (
-                <motion.tr
-                  key={item.abogado}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="border-t border-theme hover:bg-theme-tertiary/30"
-                >
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-theme-tertiary rounded-full flex items-center justify-center text-sm font-medium text-theme-primary">
-                        {item.abogado.charAt(0)}
+              {loading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i} className="border-t border-theme">
+                    <td className="p-4" colSpan={6}>
+                      <div className="h-12 bg-theme-tertiary/30 rounded animate-pulse"></div>
+                    </td>
+                  </tr>
+                ))
+              ) : rentabilidadPorAbogado.length === 0 ? (
+                <tr>
+                  <td className="p-8 text-center text-theme-secondary" colSpan={6}>
+                    No hay datos de rentabilidad para este período
+                  </td>
+                </tr>
+              ) : (
+                rentabilidadPorAbogado.map((item) => (
+                  <motion.tr
+                    key={item.abogadoId}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="border-t border-theme hover:bg-theme-tertiary/30"
+                  >
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-theme-tertiary rounded-full flex items-center justify-center text-sm font-medium text-theme-primary">
+                          {item.abogado.charAt(0)}
+                        </div>
+                        <span className="font-medium text-theme-primary">{item.abogado}</span>
                       </div>
-                      <span className="font-medium text-theme-primary">{item.abogado}</span>
-                    </div>
-                  </td>
-                  <td className="p-4 text-center text-theme-primary">{item.casos}</td>
-                  <td className="p-4 text-right text-theme-primary font-medium">{formatCurrency(item.facturado)}</td>
-                  <td className="p-4 text-right text-theme-secondary">{formatCurrency(item.coste)}</td>
-                  <td className="p-4 text-right text-theme-secondary">{item.horas}h</td>
-                  <td className="p-4 text-right">
-                    <span className={`font-medium ${getMargenColor(item.margen)}`}>{item.margen}%</span>
-                  </td>
-                </motion.tr>
-              ))}
+                    </td>
+                    <td className="p-4 text-center text-theme-primary">{item.casos}</td>
+                    <td className="p-4 text-right text-theme-primary font-medium">{formatCurrency(item.facturado)}</td>
+                    <td className="p-4 text-right text-theme-secondary">{formatCurrency(item.coste)}</td>
+                    <td className="p-4 text-right text-theme-secondary">{item.horas}h</td>
+                    <td className="p-4 text-right">
+                      <span className={`font-medium ${getMargenColor(item.margen)}`}>{item.margen}%</span>
+                    </td>
+                  </motion.tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

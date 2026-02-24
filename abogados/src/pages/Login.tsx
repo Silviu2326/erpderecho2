@@ -3,115 +3,13 @@ import { motion } from 'framer-motion';
 import { 
   Scale, Mail, Lock, Eye, EyeOff, ArrowRight, 
   Github, Twitter, ShieldCheck, ArrowLeft,
-  CheckCircle, Sparkles, User, Crown, Briefcase, 
-  Gavel, Users, FileText, ClipboardList, Calculator,
-  Phone, ChevronDown, ChevronUp
+  CheckCircle, Sparkles
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { ThemeToggleSimple } from '@/components/ThemeToggle';
 
-// Definición de los 9 roles del ERP Bufete
-const ROLES_ERP = [
-  {
-    id: 'super_admin',
-    name: 'Super Administrador',
-    description: 'Acceso total al sistema',
-    icon: Crown,
-    color: 'from-purple-500 to-purple-600',
-    bgColor: 'bg-purple-500/10',
-    borderColor: 'border-purple-500/20',
-    textColor: 'text-purple-400',
-    credentials: { email: 'superadmin@derecho.erp', password: 'super123' }
-  },
-  {
-    id: 'socio',
-    name: 'Socio / Director',
-    description: 'Máxima autoridad del bufete',
-    icon: Crown,
-    color: 'from-amber-500 to-amber-600',
-    bgColor: 'bg-amber-500/10',
-    borderColor: 'border-amber-500/20',
-    textColor: 'text-amber-400',
-    credentials: { email: 'socio@derecho.erp', password: 'socio123' }
-  },
-  {
-    id: 'abogado_senior',
-    name: 'Abogado Senior',
-    description: 'Casos complejos y supervisión',
-    icon: Gavel,
-    color: 'from-blue-500 to-blue-600',
-    bgColor: 'bg-blue-500/10',
-    borderColor: 'border-blue-500/20',
-    textColor: 'text-blue-400',
-    credentials: { email: 'senior@derecho.erp', password: 'senior123' }
-  },
-  {
-    id: 'abogado_junior',
-    name: 'Abogado Junior',
-    description: 'Casos bajo supervisión',
-    icon: Briefcase,
-    color: 'from-cyan-500 to-cyan-600',
-    bgColor: 'bg-cyan-500/10',
-    borderColor: 'border-cyan-500/20',
-    textColor: 'text-cyan-400',
-    credentials: { email: 'junior@derecho.erp', password: 'junior123' }
-  },
-  {
-    id: 'paralegal',
-    name: 'Paralegal',
-    description: 'Apoyo legal y documentos',
-    icon: FileText,
-    color: 'from-teal-500 to-teal-600',
-    bgColor: 'bg-teal-500/10',
-    borderColor: 'border-teal-500/20',
-    textColor: 'text-teal-400',
-    credentials: { email: 'paralegal@derecho.erp', password: 'paralegal123' }
-  },
-  {
-    id: 'secretario',
-    name: 'Secretario/a Jurídico',
-    description: 'Gestión documental y agenda',
-    icon: ClipboardList,
-    color: 'from-emerald-500 to-emerald-600',
-    bgColor: 'bg-emerald-500/10',
-    borderColor: 'border-emerald-500/20',
-    textColor: 'text-emerald-400',
-    credentials: { email: 'secretario@derecho.erp', password: 'secretario123' }
-  },
-  {
-    id: 'administrador',
-    name: 'Administrador',
-    description: 'Gestión operativa y RRHH',
-    icon: Users,
-    color: 'from-orange-500 to-orange-600',
-    bgColor: 'bg-orange-500/10',
-    borderColor: 'border-orange-500/20',
-    textColor: 'text-orange-400',
-    credentials: { email: 'admin@derecho.erp', password: 'admin123' }
-  },
-  {
-    id: 'contador',
-    name: 'Contador / Finanzas',
-    description: 'Contabilidad y finanzas',
-    icon: Calculator,
-    color: 'from-green-500 to-green-600',
-    bgColor: 'bg-green-500/10',
-    borderColor: 'border-green-500/20',
-    textColor: 'text-green-400',
-    credentials: { email: 'contador@derecho.erp', password: 'contador123' }
-  },
-  {
-    id: 'recepcionista',
-    name: 'Recepcionista',
-    description: 'Atención y citas',
-    icon: Phone,
-    color: 'from-pink-500 to-pink-600',
-    bgColor: 'bg-pink-500/10',
-    borderColor: 'border-pink-500/20',
-    textColor: 'text-pink-400',
-    credentials: { email: 'recepcion@derecho.erp', password: 'recepcion123' }
-  }
-];
+
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -120,41 +18,22 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showRoles, setShowRoles] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-    
-    // Simular login
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Validar credenciales contra los roles definidos
-    const matchedRole = ROLES_ERP.find(
-      role => role.credentials.email === email && role.credentials.password === password
-    );
-    
-    if (matchedRole) {
-      // Guardar rol en localStorage para usar en el dashboard
-      localStorage.setItem('userRole', matchedRole.id);
-      localStorage.setItem('userRoleName', matchedRole.name);
-      localStorage.setItem('userEmail', email);
-      navigate('/dashboard');
-    } else {
-      setError('Credenciales incorrectas. Selecciona un rol de prueba abajo.');
-    }
-    
-    setIsLoading(false);
-  };
 
-  const selectRole = (role: typeof ROLES_ERP[0]) => {
-    setEmail(role.credentials.email);
-    setPassword(role.credentials.password);
-    setSelectedRole(role.id);
-    setError('');
+    try {
+      await login(email, password);
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Error al iniciar sesión');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -317,68 +196,6 @@ export default function Login() {
                 <p className="text-red-400 text-sm text-center">{error}</p>
               </motion.div>
             )}
-
-            {/* Roles Selector */}
-            <div className="border border-theme rounded-xl overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setShowRoles(!showRoles)}
-                className="w-full p-4 bg-theme-secondary flex items-center justify-between hover:bg-theme-hover transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <User className="w-5 h-5 text-amber-500" />
-                  <div className="text-left">
-                    <span className="text-sm font-semibold text-amber-500">Acceso Rápido por Rol</span>
-                    <p className="text-xs text-theme-tertiary">Selecciona un rol de prueba</p>
-                  </div>
-                </div>
-                {showRoles ? (
-                  <ChevronUp className="w-5 h-5 text-theme-tertiary" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-theme-tertiary" />
-                )}
-              </button>
-
-              {showRoles && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className="border-t border-theme"
-                >
-                  <div className="max-h-64 overflow-y-auto p-2 space-y-1">
-                    {ROLES_ERP.map((role) => {
-                      const Icon = role.icon;
-                      const isSelected = selectedRole === role.id;
-                      return (
-                        <button
-                          key={role.id}
-                          type="button"
-                          onClick={() => selectRole(role)}
-                          className={`w-full p-3 rounded-lg flex items-center gap-3 transition-all ${
-                            isSelected
-                              ? `${role.bgColor} border ${role.borderColor}`
-                              : 'hover:bg-theme-hover/50'
-                          }`}
-                        >
-                          <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${role.color} flex items-center justify-center flex-shrink-0`}>
-                            <Icon className="w-5 h-5 text-white" />
-                          </div>
-                          <div className="text-left flex-1 min-w-0">
-                            <p className={`text-sm font-medium ${isSelected ? role.textColor : 'text-theme-primary'}`}>
-                              {role.name}
-                            </p>
-                            <p className="text-xs text-theme-tertiary truncate">{role.description}</p>
-                          </div>
-                          {isSelected && (
-                            <CheckCircle className={`w-5 h-5 ${role.textColor} flex-shrink-0`} />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </div>
 
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-3 cursor-pointer">

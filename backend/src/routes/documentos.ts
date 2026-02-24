@@ -2,14 +2,13 @@ import { Router, Response } from 'express';
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { upload, handleUploadError, requireFile } from '../middleware/upload';
 import { documentoService } from '../services/documento.service';
 import {
   CreateDocumentoDto,
   UpdateDocumentoDto,
   QueryDocumentoDto,
 } from '../dtos/documento.dto';
-import * as fs from 'fs';
-import * as path from 'path';
 
 const router = Router();
 
@@ -54,38 +53,94 @@ router.get('/', authMiddleware, async (req: AuthRequest, res: Response) => {
   }
 });
 
-// Crear documento
-router.post('/', authMiddleware, async (req: AuthRequest, res: Response) => {
-  try {
-    const dto = plainToInstance(CreateDocumentoDto, req.body);
-    const errors = await validate(dto);
-    if (errors.length > 0) {
-      res.status(400).json({ success: false, error: { message: 'Validation failed', details: errors } });
-      return;
+// Subir documento
+router.post(
+  '/', 
+  authMiddleware, 
+  upload.single('file'),
+  handleUploadError,
+  requireFile,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const dto = plainToInstance(CreateDocumentoDto, req.body);
+      const errors = await validate(dto);
+      if (errors.length > 0) {
+        res.status(400).json({ success: false, error: { message: 'Validation failed', details: errors } });
+        return;
+      }
+
+      const processOcr = req.body.processOcr !== 'false';
+      
+      const result = await documentoService.uploadFile(
+        req.file!,
+        {
+          nombre: dto.nombre,
+          expedienteId: dto.expedienteId,
+        },
+        req.user!.id,
+        processOcr
+      );
+
+      res.status(201).json(formatResponse(result.documento));
+    } catch (error: any) {
+      console.error('Upload documento error:', error);
+      res.status(error.statusCode || 500).json({ 
+        success: false, 
+        error: { 
+          code: error.code || 'INTERNAL_ERROR', 
+          message: error.message || 'Internal server error' 
+        } 
+      });
     }
-
-    const documento = await documentoService.create(dto, req.user!.id);
-
-    res.status(201).json(formatResponse(documento));
-  } catch (error: any) {
-    console.error('Create documento error:', error);
-    res.status(error.statusCode || 500).json({ 
-      success: false, 
-      error: { 
-        code: error.code || 'INTERNAL_ERROR', 
-        message: error.message || 'Internal server error' 
-      } 
-    });
   }
-});
+);
+
+// Subir múltiples documentos
+router.post(
+  '/upload-multiple',
+  authMiddleware,
+  upload.array('files', 10),
+  handleUploadError,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
+        res.status(400).json({ 
+          success: false, 
+          error: { message: 'No se han subido archivos' } 
+        });
+        return;
+      }
+
+      const processOcr = req.body.processOcr !== 'false';
+      
+      const results = await documentoService.uploadMultipleFiles(
+        req.files,
+        {
+          expedienteId: req.body.expedienteId,
+        },
+        req.user!.id,
+        processOcr
+      );
+
+      res.status(201).json(formatResponse(results.map(r => r.documento)));
+    } catch (error: any) {
+      console.error('Upload multiple error:', error);
+      res.status(error.statusCode || 500).json({ 
+        success: false, 
+        error: { 
+          code: error.code || 'INTERNAL_ERROR', 
+          message: error.message || 'Internal server error' 
+        } 
+      });
+    }
+  }
+);
 
 // Obtener documento por ID
 router.get('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-
     const documento = await documentoService.findById(id);
-
     res.json(formatResponse(documento));
   } catch (error: any) {
     console.error('Get documento error:', error);
@@ -111,7 +166,6 @@ router.put('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
     }
 
     const documento = await documentoService.update(id, dto);
-
     res.json(formatResponse(documento));
   } catch (error: any) {
     console.error('Update documento error:', error);
@@ -129,9 +183,7 @@ router.put('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
 router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-
     await documentoService.delete(id);
-
     res.json(formatResponse({ message: 'Documento eliminado correctamente' }));
   } catch (error: any) {
     console.error('Delete documento error:', error);
@@ -149,9 +201,7 @@ router.delete('/:id', authMiddleware, async (req: AuthRequest, res: Response) =>
 router.get('/:id/descargar', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-
     const { filePath, fileName } = await documentoService.download(id);
-
     res.download(filePath, fileName);
   } catch (error: any) {
     console.error('Download documento error:', error);
@@ -165,13 +215,11 @@ router.get('/:id/descargar', authMiddleware, async (req: AuthRequest, res: Respo
   }
 });
 
-// Procesar OCR de un documento
+// Procesar OCR
 router.post('/:id/ocr', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-
     const resultado = await documentoService.processOcr(id);
-
     res.json(formatResponse(resultado));
   } catch (error: any) {
     console.error('OCR documento error:', error);
@@ -185,7 +233,7 @@ router.post('/:id/ocr', authMiddleware, async (req: AuthRequest, res: Response) 
   }
 });
 
-// Procesar OCR en batch
+// OCR en batch
 router.post('/ocr/batch', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { documentoIds } = req.body;
@@ -218,7 +266,7 @@ router.post('/ocr/batch', authMiddleware, async (req: AuthRequest, res: Response
   }
 });
 
-// Buscar en contenido de documentos
+// Buscar en contenido
 router.get('/search/contenido', authMiddleware, async (req: AuthRequest, res: Response) => {
   try {
     const { q, page, limit } = req.query;

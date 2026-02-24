@@ -1,332 +1,448 @@
-// M2 - Gestión Documental: OCR
-// Escaneo y reconocimiento óptico de caracteres
-
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Upload, FileText, Camera, Image, X, Check, 
-  AlertCircle, Loader2, Edit2, Trash2, Save
+import {
+  FileSearch, AlertCircle, CheckCircle, Clock, Loader2,
+  TrendingUp, FileText, Image, Zap, RefreshCw, Eye,
+  ArrowRight, Filter, Calendar, BarChart3
 } from 'lucide-react';
-import { ocrService, type OCRResult } from '@/services/ocrService';
-import { useToast } from '@/components/ui/Toast';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Form';
-import { Card, Badge } from '@/components/ui';
-import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
-import { LoadingOverlay } from '@/components/ui/Loading';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { documentoService } from '@/services';
+import type { Documento } from '@/types/documento.types';
 
-// Datos mock de reconocimientos anteriores
-const historialOCR = [
-  { id: 'OCR-001', archivo: 'factura_restaurante.jpg', fecha: '2024-05-15', proveedor: 'Restaurante La Casa', total: 55.06, estado: 'completado' },
-  { id: 'OCR-002', archivo: 'ticket_gasolina.pdf', fecha: '2024-05-14', proveedor: 'Repsol', total: 45.00, estado: 'completado' },
-  { id: 'OCR-003', archivo: 'factura_servicios.pdf', fecha: '2024-05-10', proveedor: 'Telefónica', total: 89.99, estado: 'completado' },
-  { id: 'OCR-004', archivo: 'ticket_supermercado.jpg', fecha: '2024-05-08', proveedor: 'Mercadona', total: 32.50, estado: 'completado' },
-];
+interface Toast {
+  id: number;
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
 
-export default function DocumentosOCR() {
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [ocrResult, setOcrResult] = useState<OCRResult | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [dragActive, setDragActive] = useState(false);
-  const [editedData, setEditedData] = useState<any>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const { showToast } = useToast();
+interface OCRStats {
+  totalProcesados: number;
+  totalPendientes: number;
+  totalErrores: number;
+  promedioConfianza: number;
+  ultimos7Dias: number;
+}
 
-  const handleFile = async (file: File) => {
-    if (!file) return;
-    
-    setSelectedFile(file);
-    setIsProcessing(true);
-    setOcrResult(null);
-    showToast('Procesando documento...', 'info');
+export default function OCRDashboard() {
+  const navigate = useNavigate();
 
+  const [documentosPendientes, setDocumentosPendientes] = useState<Documento[]>([]);
+  const [documentosProcesados, setDocumentosProcesados] = useState<Documento[]>([]);
+  const [stats, setStats] = useState<OCRStats>({
+    totalProcesados: 0,
+    totalPendientes: 0,
+    totalErrores: 0,
+    promedioConfianza: 0,
+    ultimos7Dias: 0,
+  });
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState<string[]>([]);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+  const [batchProcessing, setBatchProcessing] = useState(false);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3000);
+  };
+
+  const cargarDatos = useCallback(async () => {
+    setLoading(true);
     try {
-      const result = await ocrService.processImage(file);
-      setOcrResult(result);
-      setEditedData(result.extractedData);
-    } catch (error) {
-      console.error('OCR Error:', error);
+      // Cargar todos los documentos
+      const response = await documentoService.listarDocumentos({ limit: 100 });
+      const todos = response.data;
+
+      // Separar pendientes (sin contenidoExtraido) y procesados
+      const pendientes = todos.filter(d => 
+        !d.contenidoExtraido && 
+        (d.mimeType?.includes('pdf') || d.mimeType?.startsWith('image/'))
+      );
+      
+      const procesados = todos.filter(d => d.contenidoExtraido);
+
+      setDocumentosPendientes(pendientes);
+      setDocumentosProcesados(procesados.slice(0, 10)); // Últimos 10
+
+      // Calcular estadísticas
+      const confianzas = procesados
+        .map(d => d.metadata?.ocr?.confidence || 0)
+        .filter(c => c > 0);
+      
+      const promedioConfianza = confianzas.length > 0
+        ? confianzas.reduce((a, b) => a + b, 0) / confianzas.length
+        : 0;
+
+      const ultimos7Dias = procesados.filter(d => {
+        const fecha = new Date(d.createdAt);
+        const hace7Dias = new Date();
+        hace7Dias.setDate(hace7Dias.getDate() - 7);
+        return fecha >= hace7Dias;
+      }).length;
+
+      setStats({
+        totalProcesados: procesados.length,
+        totalPendientes: pendientes.length,
+        totalErrores: 0, // TODO: tracking de errores
+        promedioConfianza,
+        ultimos7Dias,
+      });
+    } catch (err: any) {
+      showToast(err.message || 'Error al cargar datos', 'error');
     } finally {
-      setIsProcessing(false);
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    cargarDatos();
+  }, [cargarDatos]);
+
+  const procesarDocumento = async (id: string) => {
+    setProcessing(prev => [...prev, id]);
+    
+    try {
+      await documentoService.procesarOcr(id);
+      showToast('Documento procesado correctamente', 'success');
+      cargarDatos(); // Recargar para actualizar listas
+    } catch (err: any) {
+      showToast(err.message || 'Error al procesar OCR', 'error');
+    } finally {
+      setProcessing(prev => prev.filter(pid => pid !== id));
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
+  const procesarBatch = async () => {
+    if (selectedDocs.length === 0) {
+      showToast('Selecciona al menos un documento', 'info');
+      return;
+    }
+
+    setBatchProcessing(true);
+    
+    try {
+      // Procesar uno por uno para mejor feedback
+      for (const id of selectedDocs) {
+        await procesarDocumento(id);
+      }
+      showToast(`${selectedDocs.length} documentos procesados`, 'success');
+      setSelectedDocs([]);
+    } catch (err: any) {
+      showToast(err.message || 'Error en procesamiento batch', 'error');
+    } finally {
+      setBatchProcessing(false);
     }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(true);
+  const toggleSeleccion = (id: string) => {
+    setSelectedDocs(prev => 
+      prev.includes(id) 
+        ? prev.filter(did => did !== id)
+        : [...prev, id]
+    );
   };
 
-  const handleDragLeave = () => {
-    setDragActive(false);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0]);
+  const seleccionarTodos = () => {
+    if (selectedDocs.length === documentosPendientes.length) {
+      setSelectedDocs([]);
+    } else {
+      setSelectedDocs(documentosPendientes.map(d => d.id));
     }
   };
 
-  const handleSave = () => {
-    console.log('Saving OCR data:', editedData);
-    // Aquí se guardaría en la base de datos
+  const verResultado = (documento: Documento) => {
+    navigate(`/documentos/ocr/resultados?id=${documento.id}`);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(amount);
-  };
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
-    <AppLayout title="OCR" subtitle="Reconocimiento óptico de caracteres">
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-theme-primary">OCR - Escaneo de Documentos</h1>
-          <p className="text-theme-secondary">Reconocimiento óptico de caracteres para tickets y facturas</p>
-        </div>
-      </div>
+    <AppLayout>
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-theme-primary">Dashboard OCR</h1>
+            <p className="text-theme-secondary">
+              Gestión de reconocimiento óptico de caracteres
+            </p>
+          </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Panel de carga */}
-        <div className="space-y-4">
-          {/* Área de drop */}
-          <div
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onClick={() => inputRef.current?.click()}
-            className={`
-              border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all
-              ${dragActive 
-                ? 'border-accent bg-accent/10' 
-                : 'border-theme hover:border-accent/50 bg-theme-card'
-              }
-            `}
+          <button
+            onClick={cargarDatos}
+            className="flex items-center gap-2 px-4 py-2 bg-theme-secondary text-theme-primary rounded-lg hover:bg-theme-hover transition-colors"
           >
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/*,.pdf"
-              onChange={handleInputChange}
-              className="hidden"
-            />
-            
-            {isProcessing ? (
-              <div className="py-8">
-                <Loader2 className="w-12 h-12 text-accent mx-auto animate-spin" />
-                <p className="mt-4 text-theme-primary font-medium">Procesando documento...</p>
-                <p className="text-sm text-theme-secondary">Extrayendo texto y datos</p>
+            <RefreshCw className="w-4 h-4" />
+            Actualizar
+          </button>
+        </div>
+
+        {/* Estadísticas */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 bg-theme-secondary rounded-xl border border-theme"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle className="w-5 h-5 text-emerald-500" />
+              <span className="text-sm text-theme-secondary">Procesados</span>
+            </div>
+            <p className="text-2xl font-bold text-theme-primary">{stats.totalProcesados}</p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className={`p-4 rounded-xl border ${
+              stats.totalPendientes > 0 
+                ? 'bg-amber-500/10 border-amber-500/20' 
+                : 'bg-theme-secondary border-theme'
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className={`w-5 h-5 ${stats.totalPendientes > 0 ? 'text-amber-500' : 'text-theme-tertiary'}`} />
+              <span className={`text-sm ${stats.totalPendientes > 0 ? 'text-amber-500' : 'text-theme-secondary'}`}>
+                Pendientes
+              </span>
+            </div>
+            <p className={`text-2xl font-bold ${stats.totalPendientes > 0 ? 'text-amber-500' : 'text-theme-primary'}`}>
+              {stats.totalPendientes}
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="p-4 bg-theme-secondary rounded-xl border border-theme"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <BarChart3 className="w-5 h-5 text-blue-500" />
+              <span className="text-sm text-theme-secondary">Confianza promedio</span>
+            </div>
+            <p className="text-2xl font-bold text-theme-primary">
+              {Math.round(stats.promedioConfianza * 100)}%
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="p-4 bg-theme-secondary rounded-xl border border-theme"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <Calendar className="w-5 h-5 text-purple-500" />
+              <span className="text-sm text-theme-secondary">Últimos 7 días</span>
+            </div>
+            <p className="text-2xl font-bold text-theme-primary">{stats.ultimos7Dias}</p>
+          </motion.div>
+        </div>
+
+        {/* Documentos pendientes */}
+        {documentosPendientes.length > 0 && (
+          <div className="bg-theme-secondary rounded-xl border border-theme overflow-hidden">
+            <div className="p-4 border-b border-theme flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-amber-500" />
+                <h2 className="text-lg font-semibold text-theme-primary">
+                  Documentos pendientes de OCR
+                </h2>
+                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-500 text-sm rounded-full">
+                  {documentosPendientes.length}
+                </span>
               </div>
-            ) : selectedFile ? (
-              <div className="py-4">
-                <FileText className="w-12 h-12 text-accent mx-auto" />
-                <p className="mt-3 text-theme-primary font-medium">{selectedFile.name}</p>
-                <p className="text-sm text-theme-secondary">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+
+              {selectedDocs.length > 0 && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); setSelectedFile(null); setOcrResult(null); }}
-                  className="mt-3 text-sm text-red-400 hover:text-red-300"
+                  onClick={procesarBatch}
+                  disabled={batchProcessing}
+                  className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50"
                 >
-                  Cancelar
+                  {batchProcessing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-4 h-4" />
+                      Procesar {selectedDocs.length} seleccionados
+                    </>
+                  )}
                 </button>
+              )}
+            </div>
+
+            <div className="p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <input
+                  type="checkbox"
+                  checked={selectedDocs.length === documentosPendientes.length && documentosPendientes.length > 0}
+                  onChange={seleccionarTodos}
+                  className="w-4 h-4 rounded border-theme text-amber-500 focus:ring-amber-500"
+                />
+                <span className="text-sm text-theme-secondary">
+                  {selectedDocs.length} de {documentosPendientes.length} seleccionados
+                </span>
               </div>
-            ) : (
-              <>
-                <Upload className="w-12 h-12 text-theme-muted mx-auto" />
-                <p className="mt-4 text-theme-primary font-medium">Arrastra un archivo o haz clic para seleccionar</p>
-                <p className="text-sm text-theme-secondary mt-1">Soporta: JPG, PNG, PDF</p>
-              </>
-            )}
-          </div>
 
-          {/* Botones de acción rápida */}
-          <div className="flex gap-3">
-            <button className="flex-1 flex items-center justify-center gap-2 py-3 bg-theme-card border border-theme rounded-xl text-theme-secondary hover:text-theme-primary hover:border-accent transition-colors">
-              <Camera className="w-5 h-5" />
-              Cámara
-            </button>
-            <button className="flex-1 flex items-center justify-center gap-2 py-3 bg-theme-card border border-theme rounded-xl text-theme-secondary hover:text-theme-primary hover:border-accent transition-colors">
-              <Image className="w-5 h-5" />
-              Galería
-            </button>
-          </div>
+              <div className="space-y-2">
+                {documentosPendientes.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="flex items-center gap-3 p-3 bg-theme rounded-lg hover:bg-theme-hover transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedDocs.includes(doc.id)}
+                      onChange={() => toggleSeleccion(doc.id)}
+                      className="w-4 h-4 rounded border-theme text-amber-500 focus:ring-amber-500"
+                    />
 
-          {/* Historial */}
-          <div className="bg-theme-card border border-theme rounded-xl p-4">
-            <h3 className="font-semibold text-theme-primary mb-3">Historial de escaneos</h3>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {historialOCR.map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-3 bg-theme-tertiary/50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-theme-muted" />
-                    <div>
-                      <p className="text-sm text-theme-primary">{item.archivo}</p>
-                      <p className="text-xs text-theme-muted">{item.proveedor} • {formatCurrency(item.total)}</p>
+                    <div className="w-10 h-10 bg-theme-secondary rounded-lg flex items-center justify-center">
+                      {doc.mimeType?.startsWith('image/') ? (
+                        <Image className="w-5 h-5 text-theme-tertiary" />
+                      ) : (
+                        <FileText className="w-5 h-5 text-theme-tertiary" />
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-theme-primary truncate">{doc.nombre}</p>
+                      <p className="text-sm text-theme-secondary">
+                        {documentoService.formatFileSize(doc.tamano)} • 
+                        Subido el {new Date(doc.createdAt).toLocaleDateString('es-ES')}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => procesarDocumento(doc.id)}
+                      disabled={processing.includes(doc.id)}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm bg-amber-500/10 text-amber-500 rounded-lg hover:bg-amber-500/20 disabled:opacity-50"
+                    >
+                      {processing.includes(doc.id) ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          Procesando...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-3 h-3" />
+                          Procesar OCR
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Documentos recientemente procesados */}
+        {documentosProcesados.length > 0 && (
+          <div className="bg-theme-secondary rounded-xl border border-theme overflow-hidden">
+            <div className="p-4 border-b border-theme">
+              <h2 className="text-lg font-semibold text-theme-primary">
+                Recientemente procesados
+              </h2>
+            </div>
+
+            <div className="divide-y divide-theme">
+              {documentosProcesados.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="p-4 flex items-center gap-4 hover:bg-theme-hover/50 transition-colors"
+                >
+                  <div className="w-10 h-10 bg-emerald-500/10 rounded-lg flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-emerald-500" />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-theme-primary truncate">{doc.nombre}</p>
+                    <div className="flex items-center gap-3 text-sm text-theme-secondary">
+                      <span>
+                        Confianza: {' '}
+                        <span className={`
+                          ${(doc.metadata?.ocr?.confidence || 0) > 0.8 ? 'text-emerald-500' :
+                            (doc.metadata?.ocr?.confidence || 0) > 0.5 ? 'text-amber-500' : 'text-red-500'}
+                        `}>
+                          {Math.round((doc.metadata?.ocr?.confidence || 0) * 100)}%
+                        </span>
+                      </span>
+                      {doc.metadata?.ocr?.pages && (
+                        <span>• {doc.metadata.ocr.pages} páginas</span>
+                      )}
+                      <span>• {new Date(doc.updatedAt).toLocaleDateString('es-ES')}</span>
                     </div>
                   </div>
-                  <span className="text-xs text-emerald-400">{item.estado}</span>
+
+                  <button
+                    onClick={() => verResultado(doc)}
+                    className="flex items-center gap-1 text-sm text-amber-500 hover:text-amber-400"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Ver resultado
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
                 </div>
               ))}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Panel de resultados */}
-        <div className="space-y-4">
-          {ocrResult ? (
-            <>
-              {/* Estado del procesamiento */}
-              <div className={`p-4 rounded-xl flex items-center gap-3 ${
-                ocrResult.success 
-                  ? 'bg-emerald-500/10 border border-emerald-500/20' 
-                  : 'bg-red-500/10 border border-red-500/20'
-              }`}>
-                {ocrResult.success ? (
-                  <>
-                    <Check className="w-5 h-5 text-emerald-400" />
-                    <span className="text-emerald-400">Documento procesado correctamente</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="w-5 h-5 text-red-400" />
-                    <span className="text-red-400">Error al procesar documento</span>
-                  </>
-                )}
-                <span className="ml-auto text-xs text-theme-muted">{ocrResult.processingTime}ms</span>
-              </div>
-
-              {/* Datos extraídos */}
-              <div className="bg-theme-card border border-theme rounded-xl p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-theme-primary">Datos Extraídos</h3>
-                  <button
-                    onClick={handleSave}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-accent text-white text-sm rounded-lg hover:bg-accent-hover"
-                  >
-                    <Save className="w-4 h-4" />
-                    Guardar
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs text-theme-muted">Proveedor</label>
-                    <input
-                      type="text"
-                      value={editedData?.vendor || ''}
-                      onChange={(e) => setEditedData({ ...editedData, vendor: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 bg-theme-tertiary border border-theme rounded-lg text-theme-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-theme-muted">Fecha</label>
-                    <input
-                      type="date"
-                      value={editedData?.date || ''}
-                      onChange={(e) => setEditedData({ ...editedData, date: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 bg-theme-tertiary border border-theme rounded-lg text-theme-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-theme-muted">NIF/CIF</label>
-                    <input
-                      type="text"
-                      value={editedData?.cif || ''}
-                      onChange={(e) => setEditedData({ ...editedData, cif: e.target.value })}
-                      className="w-full mt-1 px-3 py-2 bg-theme-tertiary border border-theme rounded-lg text-theme-primary"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-theme-muted">Base Imponible</label>
-                      <input
-                        type="number"
-                        value={((editedData?.total || 0) / 1.21).toFixed(2)}
-                        onChange={(e) => setEditedData({ ...editedData, total: parseFloat(e.target.value) * 1.21 })}
-                        className="w-full mt-1 px-3 py-2 bg-theme-tertiary border border-theme rounded-lg text-theme-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-theme-muted">IVA</label>
-                      <input
-                        type="number"
-                        value={(editedData?.tax || 0).toFixed(2)}
-                        onChange={(e) => setEditedData({ ...editedData, tax: parseFloat(e.target.value) })}
-                        className="w-full mt-1 px-3 py-2 bg-theme-tertiary border border-theme rounded-lg text-theme-primary"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-xs text-theme-muted">Total</label>
-                    <input
-                      type="number"
-                      value={editedData?.total || 0}
-                      onChange={(e) => setEditedData({ ...editedData, total: parseFloat(e.target.value) })}
-                      className="w-full mt-1 px-3 py-2 bg-theme-tertiary border border-theme rounded-lg text-theme-primary font-bold text-lg"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Texto extraído */}
-              <div className="bg-theme-card border border-theme rounded-xl p-4">
-                <h3 className="font-semibold text-theme-primary mb-3">Texto Extraído</h3>
-                <div className="p-3 bg-theme-tertiary/50 rounded-lg">
-                  <pre className="text-sm text-theme-secondary whitespace-pre-wrap font-mono">
-                    {ocrResult.rawText}
-                  </pre>
-                </div>
-                <div className="mt-2 text-xs text-theme-muted">
-                  Confianza: {(ocrResult.confidence * 100).toFixed(1)}%
-                </div>
-              </div>
-
-              {/* Items detectados */}
-              {editedData?.items && editedData.items.length > 0 && (
-                <div className="bg-theme-card border border-theme rounded-xl p-4">
-                  <h3 className="font-semibold text-theme-primary mb-3">Items Detectados</h3>
-                  <div className="space-y-2">
-                    {editedData.items.map((item: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-theme-tertiary/50 rounded-lg">
-                        <input
-                          type="text"
-                          value={item.description}
-                          onChange={(e) => {
-                            const newItems = [...editedData.items];
-                            newItems[index].description = e.target.value;
-                            setEditedData({ ...editedData, items: newItems });
-                          }}
-                          className="flex-1 bg-transparent text-theme-primary text-sm"
-                        />
-                        <span className="text-theme-secondary text-sm">
-                          {formatCurrency(item.total)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="bg-theme-card border border-theme rounded-xl p-12 text-center h-full flex flex-col items-center justify-center">
-              <FileText className="w-16 h-16 text-theme-muted mb-4" />
-              <p className="text-theme-primary font-medium">Sin resultados</p>
-              <p className="text-theme-secondary text-sm mt-1">
-                Sube un documento para extraer sus datos
-              </p>
-            </div>
-          )}
-        </div>
+        {/* Estado vacío */}
+        {documentosPendientes.length === 0 && documentosProcesados.length === 0 && (
+          <div className="text-center py-12 bg-theme-secondary rounded-xl">
+            <FileSearch className="w-12 h-12 text-theme-tertiary mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-theme-primary mb-2">
+              No hay documentos para procesar
+            </h3>
+            <p className="text-theme-secondary">
+              Sube documentos PDF o imágenes para procesarlos con OCR
+            </p>
+          </div>
+        )}
       </div>
-    </div>
+
+      {/* Toasts */}
+      <div className="fixed bottom-6 right-6 space-y-2 z-50">
+        {toasts.map(toast => (
+          <motion.div
+            key={toast.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
+              toast.type === 'success'
+                ? 'bg-emerald-500 text-white'
+                : toast.type === 'error'
+                ? 'bg-red-500 text-white'
+                : 'bg-amber-500 text-white'
+            }`}
+          >
+            {toast.type === 'success' ? <CheckCircle className="w-4 h-4" />
+              : toast.type === 'error' ? <AlertCircle className="w-4 h-4" />
+              : <FileSearch className="w-4 h-4" />}
+            <span>{toast.message}</span>
+          </motion.div>
+        ))}
+      </div>
     </AppLayout>
   );
 }

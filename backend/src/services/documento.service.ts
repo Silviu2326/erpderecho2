@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import sharp from 'sharp';
 import { prisma } from '../config/database';
+import { env } from '../config/env';
 import { ServiceException, PaginationParams, PaginatedResult } from './base.types';
 import { ocrService } from './ocr.service';
 
@@ -28,7 +30,30 @@ export interface QueryDocumentoParams extends PaginationParams {
   tipo?: string;
 }
 
+export interface UploadResult {
+  documento: any;
+  ocrResult?: any;
+  thumbnailPath?: string;
+}
+
 class DocumentoService {
+  private readonly documentsPath: string;
+  private readonly thumbnailsPath: string;
+
+  constructor() {
+    this.documentsPath = path.resolve(env.UPLOAD_PATH, 'documents');
+    this.thumbnailsPath = path.resolve(env.UPLOAD_PATH, 'thumbnails');
+    this.ensureDirectories();
+  }
+
+  private ensureDirectories() {
+    [this.documentsPath, this.thumbnailsPath].forEach(dir => {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+    });
+  }
+
   async findAll(params: QueryDocumentoParams): Promise<PaginatedResult<any>> {
     const { page = 1, limit = 20, sort = 'createdAt', order = 'desc', search, expediente_id, tipo } = params;
     const skip = (page - 1) * limit;
@@ -48,7 +73,7 @@ class DocumentoService {
     if (search) {
       where.OR = [
         { nombre: { contains: search, mode: 'insensitive' } },
-        { tipo: { contains: search, mode: 'insensitive' } },
+        { contenidoExtraido: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -58,21 +83,18 @@ class DocumentoService {
         skip,
         take: limit,
         orderBy: { [sort]: order },
-        select: {
-          id: true,
-          nombre: true,
-          tipo: true,
-          tamano: true,
-          ruta: true,
-          mimeType: true,
-          expedienteId: true,
-          usuarioId: true,
-          createdAt: true,
-          updatedAt: true,
+        include: {
           expediente: {
             select: {
               id: true,
               numeroExpediente: true,
+            },
+          },
+          usuario: {
+            select: {
+              id: true,
+              nombre: true,
+              apellido1: true,
             },
           },
         },
@@ -80,8 +102,13 @@ class DocumentoService {
       prisma.documento.count({ where }),
     ]);
 
+    const documentosConThumbnail = documentos.map(doc => ({
+      ...doc,
+      thumbnailUrl: this.getThumbnailUrl(doc.id, doc.mimeType || undefined),
+    }));
+
     return {
-      data: documentos,
+      data: documentosConThumbnail,
       meta: {
         page,
         limit,
@@ -116,7 +143,121 @@ class DocumentoService {
       throw new ServiceException('DOCUMENTO_NOT_FOUND', 'Documento no encontrado', 404);
     }
 
-    return documento;
+    return {
+      ...documento,
+      thumbnailUrl: this.getThumbnailUrl(documento.id, documento.mimeType || undefined),
+    };
+  }
+
+  async uploadFile(
+    file: Express.Multer.File, 
+    input: Partial<CreateDocumentoInput>, 
+    usuarioId: string,
+    processOcr: boolean = env.OCR_AUTO_PROCESS
+  ): Promise<UploadResult> {
+    const finalPath = path.join(this.documentsPath, file.filename);
+    fs.renameSync(file.path, finalPath);
+
+    const documento = await prisma.documento.create({
+      data: {
+        nombre: input.nombre || file.originalname,
+        tipo: input.tipo || this.getFileType(file.mimetype),
+        tamano: file.size,
+        ruta: finalPath,
+        mimeType: file.mimetype,
+        expedienteId: input.expedienteId,
+        usuarioId,
+      } as any,
+    });
+
+    let thumbnailPath: string | undefined;
+    try {
+      thumbnailPath = await this.generateThumbnail(finalPath, documento.id, file.mimetype);
+    } catch (error) {
+      console.warn('Error generando thumbnail:', error);
+    }
+
+    let ocrResult: any;
+    if (processOcr && this.isOcrEnabled(file.mimetype)) {
+      try {
+        ocrResult = await this.processOcr(documento.id);
+      } catch (error) {
+        console.warn('Error procesando OCR:', error);
+      }
+    }
+
+    return {
+      documento: {
+        ...documento,
+        thumbnailUrl: this.getThumbnailUrl(documento.id, documento.mimeType),
+      },
+      ocrResult,
+      thumbnailPath,
+    };
+  }
+
+  async uploadMultipleFiles(
+    files: Express.Multer.File[],
+    input: Partial<CreateDocumentoInput>,
+    usuarioId: string,
+    processOcr: boolean = env.OCR_AUTO_PROCESS
+  ): Promise<UploadResult[]> {
+    const results: UploadResult[] = [];
+    
+    for (const file of files) {
+      try {
+        const result = await this.uploadFile(file, input, usuarioId, processOcr);
+        results.push(result);
+      } catch (error) {
+        console.error(`Error subiendo archivo ${file.originalname}:`, error);
+        throw error;
+      }
+    }
+
+    return results;
+  }
+
+  private async generateThumbnail(filePath: string, documentoId: string, mimeType: string): Promise<string | undefined> {
+    if (!mimeType?.startsWith('image/')) {
+      return undefined;
+    }
+
+    const thumbnailFilename = `thumb-${documentoId}.jpg`;
+    const thumbnailPath = path.join(this.thumbnailsPath, thumbnailFilename);
+
+    try {
+      await sharp(filePath)
+        .resize(env.THUMBNAIL_WIDTH, env.THUMBNAIL_HEIGHT, {
+          fit: 'inside',
+          withoutEnlargement: true
+        })
+        .jpeg({ quality: env.THUMBNAIL_QUALITY })
+        .toFile(thumbnailPath);
+
+      return thumbnailPath;
+    } catch (error) {
+      console.error('Error generando thumbnail:', error);
+      return undefined;
+    }
+  }
+
+  private getThumbnailUrl(documentoId: string, mimeType: string | undefined | null): string | undefined {
+    if (!mimeType?.startsWith('image/')) {
+      return undefined;
+    }
+    return `/uploads/thumbnails/thumb-${documentoId}.jpg`;
+  }
+
+  private getFileType(mimeType: string): string {
+    if (mimeType.includes('pdf')) return 'PDF';
+    if (mimeType.includes('image')) return 'IMAGEN';
+    if (mimeType.includes('word') || mimeType.includes('document')) return 'WORD';
+    if (mimeType.includes('excel') || mimeType.includes('sheet')) return 'EXCEL';
+    return 'OTRO';
+  }
+
+  private isOcrEnabled(mimeType: string): boolean {
+    return mimeType?.includes('pdf') || mimeType?.startsWith('image/');
   }
 
   async create(input: CreateDocumentoInput, usuarioId: string): Promise<any> {
@@ -127,7 +268,10 @@ class DocumentoService {
       } as any,
     });
 
-    return documento;
+    return {
+      ...documento,
+      thumbnailUrl: this.getThumbnailUrl(documento.id, documento.mimeType),
+    };
   }
 
   async update(id: string, input: UpdateDocumentoInput): Promise<any> {
@@ -144,7 +288,10 @@ class DocumentoService {
       data: input as any,
     });
 
-    return documento;
+    return {
+      ...documento,
+      thumbnailUrl: this.getThumbnailUrl(documento.id, documento.mimeType),
+    };
   }
 
   async delete(id: string): Promise<void> {
@@ -195,13 +342,13 @@ class DocumentoService {
       throw new ServiceException('FILE_NOT_FOUND', 'Archivo no encontrado en el servidor', 404);
     }
 
-    // Procesar OCR
-    const ocrResult = await ocrService.extractText(filePath);
+    if (!this.isOcrEnabled(documento.mimeType || '')) {
+      throw new ServiceException('OCR_NOT_SUPPORTED', 'Tipo de archivo no soportado para OCR', 400);
+    }
 
-    // Analizar documento
+    const ocrResult = await ocrService.extractText(filePath);
     const analysis = await ocrService.analyzeDocument(filePath);
 
-    // Actualizar documento con información extraída
     await prisma.documento.update({
       where: { id },
       data: {
@@ -251,7 +398,6 @@ class DocumentoService {
   async searchByContent(query: string, params: PaginationParams = {}): Promise<PaginatedResult<any>> {
     const { page = 1, limit = 20 } = params;
     
-    // Por ahora, búsqueda básica por nombre (requiere migración de DB para búsqueda en contenido)
     const resultado = await this.findAll({
       page,
       limit,

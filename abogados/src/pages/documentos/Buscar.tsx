@@ -1,297 +1,352 @@
-// M2 - Gestión Documental: Buscar
-// Búsqueda full-text de documentos
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  Search, FileText, FolderOpen, Filter, Download, 
-  Eye, Clock, User, Tag, X, ChevronRight
+import {
+  Search, FileText, FolderOpen, Filter, Download, Eye, Clock, User, X,
+  AlertCircle, Loader2, ChevronRight, File, Image, Table
 } from 'lucide-react';
-import { useDebounce } from '@/hooks/useDebounce';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { Skeleton } from '@/components/ui/Skeleton';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Form';
-import { Card, Badge } from '@/components/ui';
-import { Breadcrumbs } from '@/components/ui/Breadcrumbs';
-import { useToast } from '@/components/ui/Toast';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { documentoService } from '@/services';
+import type { Documento, TipoDocumento } from '@/types/documento.types';
 
-// Datos mock
-const documentosMock = [
-  { id: 'DOC-001', nombre: 'Demanda_laboral_2024.pdf', tipo: 'pdf', expediente: 'EXP-2024-001', caso: 'García vs TechCorp', tamano: '2.4 MB', fecha: '2024-01-15', autor: 'María González', tags: ['demanda', 'laboral'], contenido: 'demanda por despido improcedente solicitando indemnizacion...' },
-  { id: 'DOC-002', nombre: 'Contrato_arrendamiento.pdf', tipo: 'pdf', expediente: 'EXP-2024-002', caso: 'Martínez S.L.', tamano: '1.8 MB', fecha: '2024-02-20', autor: 'Carlos Ruiz', tags: ['contrato', 'arrendamiento'], contenido: 'contrato de arrendamiento de local comercial...' },
-  { id: 'DOC-003', nombre: 'Sentencia_2019_1234.pdf', tipo: 'pdf', expediente: 'EXP-2023-045', caso: 'Rodríguez vs Estado', tamano: '5.2 MB', fecha: '2019-06-15', autor: 'Ana López', tags: ['sentencia', 'penal'], contenido: 'sentencia absolutoria por falta de pruebas...' },
-  { id: 'DOC-004', nombre: 'Acta_constitucion_S.L..docx', tipo: 'docx', expediente: 'EXP-2024-003', caso: 'Nueva Startup S.L.', tamano: '890 KB', fecha: '2024-03-10', autor: 'María González', tags: ['acta', 'sociedad'], contenido: 'acta de constitucion de sociedad limitada...' },
-  { id: 'DOC-005', nombre: 'Escritura_divorcio.pdf', tipo: 'pdf', expediente: 'EXP-2024-004', caso: 'García - Divorce', tamano: '3.1 MB', fecha: '2024-04-05', autor: 'Carlos Ruiz', tags: ['escritura', 'familia'], contenido: 'escritura publica de divorcio consensual...' },
-  { id: 'DOC-006', nombre: 'Informe_pericial.pdf', tipo: 'pdf', expediente: 'EXP-2024-005', caso: 'Accidente Sánchez', tamano: '8.5 MB', fecha: '2024-05-12', autor: 'Ana López', tags: ['pericial', 'accidente'], contenido: 'informe pericial médico de lesiones...' },
+interface Toast {
+  id: number;
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
+
+const tipoOpciones: { value: TipoDocumento | 'all'; label: string }[] = [
+  { value: 'all', label: 'Todos los tipos' },
+  { value: 'PDF', label: 'PDF' },
+  { value: 'IMAGEN', label: 'Imágenes' },
+  { value: 'WORD', label: 'Word' },
+  { value: 'EXCEL', label: 'Excel' },
+  { value: 'OTRO', label: 'Otros' },
 ];
 
-const tiposArchivo = ['todos', 'pdf', 'docx', 'xlsx', 'pptx'];
+export default function Buscar() {
+  const navigate = useNavigate();
 
-export default function DocumentosBuscar() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<typeof documentosMock>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [tipoFiltro, setTipoFiltro] = useState<TipoDocumento | 'all'>('all');
+  const [documentos, setDocumentos] = useState<Documento[]>([]);
+  const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [filterTipo, setFilterTipo] = useLocalStorage('buscar-tipo', 'todos');
-  const [selectedDoc, setSelectedDoc] = useState<typeof documentosMock[0] | null>(null);
-  const debouncedSearch = useDebounce(searchTerm, 300);
-  const { showToast } = useToast();
+  const [totalResultados, setTotalResultados] = useState(0);
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
-  const handleSearch = () => {
-    if (!searchTerm.trim()) return;
-    
-    setHasSearched(true);
-    
-    // Simular búsqueda full-text
-    const results = documentosMock.filter(doc => {
-      const matchesSearch = doc.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           doc.caso.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           doc.contenido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           doc.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-      const matchesTipo = filterTipo === 'todos' || doc.tipo === filterTipo;
-      return matchesSearch && matchesTipo;
-    });
-    
-    setSearchResults(results);
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3000);
   };
 
-  const getTipoIcon = (tipo: string) => {
-    switch (tipo) {
-      case 'pdf': return '📄';
-      case 'docx': return '📝';
-      case 'xlsx': return '📊';
-      case 'pptx': return '📑';
-      default: return '📁';
+  const handleSearch = useCallback(async () => {
+    if (!searchQuery.trim() && tipoFiltro === 'all') {
+      showToast('Introduce un término de búsqueda', 'info');
+      return;
+    }
+
+    setLoading(true);
+    setHasSearched(true);
+
+    try {
+      const response = await documentoService.listarDocumentos({
+        search: searchQuery || undefined,
+        tipo: tipoFiltro === 'all' ? undefined : tipoFiltro,
+        limit: 50,
+      });
+
+      setDocumentos(response.data);
+      setTotalResultados(response.meta.total);
+    } catch (err: any) {
+      showToast(err.message || 'Error al buscar', 'error');
+      setDocumentos([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchQuery, tipoFiltro]);
+
+  // Búsqueda al presionar Enter
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
     }
   };
 
+  const handleVerDocumento = (documento: Documento) => {
+    navigate(`/documentos/biblioteca/${documento.id}`);
+  };
+
+  const handleDescargar = async (e: React.MouseEvent, documento: Documento) => {
+    e.stopPropagation();
+    try {
+      await documentoService.descargarDocumento(documento.id, documento.nombre);
+      showToast('Descarga iniciada', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Error al descargar', 'error');
+    }
+  };
+
+  const getFileIcon = (mimeType?: string) => {
+    if (!mimeType) return File;
+    if (mimeType.includes('pdf')) return FileText;
+    if (mimeType.startsWith('image/')) return Image;
+    if (mimeType.includes('excel') || mimeType.includes('sheet')) return Table;
+    return File;
+  };
+
+  const getTipoLabel = (tipo: string) => {
+    const labels: Record<string, string> = {
+      'PDF': 'PDF',
+      'IMAGEN': 'Imagen',
+      'WORD': 'Word',
+      'EXCEL': 'Excel',
+      'OTRO': 'Otro',
+    };
+    return labels[tipo] || tipo;
+  };
+
   return (
-    <AppLayout title="Buscar Documentos" subtitle="Búsqueda full-text de documentos">
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <AppLayout>
+      <div className="p-6 max-w-5xl mx-auto space-y-6">
+        {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-theme-primary">Buscar Documentos</h1>
-          <p className="text-theme-secondary">Búsqueda full-text en todo el repositorio</p>
-        </div>
-      </div>
-
-      {/* Buscador principal */}
-      <div className="bg-theme-card border border-theme rounded-xl p-6">
-        <div className="flex gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-theme-muted" />
-            <input
-              type="text"
-              placeholder="Buscar en documentos, casos, contenido..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="w-full pl-12 pr-4 py-3 bg-theme-tertiary border border-theme rounded-xl text-theme-primary placeholder-theme-muted focus:outline-none focus:border-accent text-lg"
-            />
-          </div>
-          <select
-            value={filterTipo}
-            onChange={(e) => setFilterTipo(e.target.value)}
-            className="px-4 py-3 bg-theme-tertiary border border-theme rounded-xl text-theme-primary focus:outline-none focus:border-accent"
-          >
-            {tiposArchivo.map(tipo => (
-              <option key={tipo} value={tipo}>
-                {tipo === 'todos' ? 'Todos los tipos' : tipo.toUpperCase()}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={handleSearch}
-            className="px-6 py-3 bg-accent text-white font-medium rounded-xl hover:bg-accent-hover transition-colors"
-          >
-            Buscar
-          </button>
+          <p className="text-theme-secondary">Búsqueda full-text en contenido OCR y metadatos</p>
         </div>
 
-        <p className="text-sm text-theme-muted mt-3">
-          💡 Puedes buscar por nombre de archivo, caso, contenido del documento o etiquetas
-        </p>
-      </div>
+        {/* Buscador */}
+        <div className="bg-theme-secondary rounded-xl border border-theme p-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-theme-tertiary" />
+              <input
+                type="text"
+                placeholder="Buscar en documentos, contenido OCR, expedientes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="w-full pl-12 pr-4 py-3 bg-theme border border-theme rounded-lg text-theme-primary placeholder-theme-tertiary focus:outline-none focus:border-amber-500 text-lg"
+              />
+            </div>
 
-      {/* Resultados */}
-      {hasSearched && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-theme-secondary">
-              {searchResults.length} resultado{searchResults.length !== 1 ? 's' : ''} encontrado{searchResults.length !== 1 ? 's' : ''}
-            </p>
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-theme-tertiary" />
+              <select
+                value={tipoFiltro}
+                onChange={(e) => setTipoFiltro(e.target.value as TipoDocumento | 'all')}
+                className="px-4 py-3 bg-theme border border-theme rounded-lg text-theme-primary focus:outline-none focus:border-amber-500"
+              >
+                {tipoOpciones.map(opcion => (
+                  <option key={opcion.value} value={opcion.value}>
+                    {opcion.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={handleSearch}
+              disabled={loading}
+              className="px-6 py-3 bg-amber-500 text-white font-medium rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Buscando...
+                </>
+              ) : (
+                'Buscar'
+              )}
+            </button>
           </div>
 
-          {searchResults.length === 0 ? (
-            <div className="bg-theme-card border border-theme rounded-xl p-12 text-center">
-              <Search className="w-12 h-12 text-theme-muted mx-auto mb-4" />
-              <p className="text-theme-primary font-medium">No se encontraron resultados</p>
-              <p className="text-theme-secondary text-sm mt-1">Intenta con otros términos de búsqueda</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {searchResults.map((doc) => (
-                <motion.div
-                  key={doc.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-theme-card border border-theme rounded-xl p-4 hover:border-accent/50 transition-colors cursor-pointer"
-                  onClick={() => setSelectedDoc(doc)}
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="text-3xl">{getTipoIcon(doc.tipo)}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-theme-primary truncate">{doc.nombre}</h3>
-                        <span className="px-2 py-0.5 text-xs rounded bg-theme-tertiary text-theme-secondary">
-                          {doc.tipo.toUpperCase()}
-                        </span>
-                      </div>
-                      <p className="text-sm text-theme-secondary mt-1">{doc.caso}</p>
-                      
-                      {/* Preview del contenido */}
-                      <p className="text-sm text-theme-muted mt-2 line-clamp-2">
-                        {doc.contenido}
-                      </p>
-                      
-                      <div className="flex items-center gap-4 mt-3 text-xs text-theme-muted">
-                        <span className="flex items-center gap-1">
-                          <FolderOpen className="w-3 h-3" />
-                          {doc.expediente}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          {doc.autor}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {new Date(doc.fecha).toLocaleDateString('es-ES')}
-                        </span>
-                        <span>{doc.tamano}</span>
-                      </div>
-                      
-                      <div className="flex gap-2 mt-2">
-                        {doc.tags.map(tag => (
-                          <span key={tag} className="px-2 py-0.5 text-xs rounded bg-accent/10 text-accent">
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button className="p-2 text-theme-muted hover:text-theme-primary hover:bg-theme-tertiary rounded-lg transition-colors">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 text-theme-muted hover:text-theme-primary hover:bg-theme-tertiary rounded-lg transition-colors">
-                        <Download className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 text-theme-muted hover:text-theme-primary hover:bg-theme-tertiary rounded-lg transition-colors">
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Mensaje inicial */}
-      {!hasSearched && (
-        <div className="bg-theme-card border border-theme rounded-xl p-12 text-center">
-          <Search className="w-16 h-16 text-theme-muted mx-auto mb-4" />
-          <p className="text-xl font-medium text-theme-primary">Buscar en documentos</p>
-          <p className="text-theme-secondary mt-2">
-            Introduce términos de búsqueda para encontrar documentos en todo el repositorio
+          <p className="text-sm text-theme-tertiary mt-3">
+            💡 La búsqueda incluye: nombre del archivo, contenido extraído por OCR, número de expediente y metadatos
           </p>
         </div>
-      )}
 
-      {/* Modal de detalle */}
-      {selectedDoc && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
-          onClick={() => setSelectedDoc(null)}
-        >
+        {/* Resultados */}
+        {hasSearched && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-theme-secondary">
+                {loading ? 'Buscando...' : `${totalResultados} resultado${totalResultados !== 1 ? 's' : ''} encontrado${totalResultados !== 1 ? 's' : ''}`}
+              </p>
+
+              {(searchQuery || tipoFiltro !== 'all') && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setTipoFiltro('all');
+                    setHasSearched(false);
+                    setDocumentos([]);
+                  }}
+                  className="text-sm text-theme-tertiary hover:text-theme-primary flex items-center gap-1"
+                >
+                  <X className="w-4 h-4" />
+                  Limpiar búsqueda
+                </button>
+              )}
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+              </div>
+            ) : documentos.length === 0 ? (
+              <div className="bg-theme-secondary rounded-xl border border-theme p-12 text-center">
+                <Search className="w-12 h-12 text-theme-tertiary mx-auto mb-4" />
+                <p className="text-theme-primary font-medium">No se encontraron resultados</p>
+                <p className="text-theme-secondary text-sm mt-1">
+                  Intenta con otros términos de búsqueda o filtros
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {documentos.map((documento, idx) => {
+                  const Icon = getFileIcon(documento.mimeType);
+
+                  return (
+                    <motion.div
+                      key={documento.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      className="bg-theme-secondary rounded-xl border border-theme p-4 hover:border-amber-500/30 transition-colors cursor-pointer group"
+                      onClick={() => handleVerDocumento(documento)}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-theme rounded-lg flex items-center justify-center flex-shrink-0">
+                          {documento.thumbnailUrl ? (
+                            <img
+                              src={documento.thumbnailUrl}
+                              alt=""
+                              className="w-full h-full object-cover rounded-lg"
+                            />
+                          ) : (
+                            <Icon className="w-6 h-6 text-theme-tertiary" />
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-medium text-theme-primary truncate group-hover:text-amber-500 transition-colors">
+                              {documento.nombre}
+                            </h3>
+                            <span className="px-2 py-0.5 text-xs rounded bg-theme text-theme-secondary">
+                              {getTipoLabel(documento.tipo)}
+                            </span>
+                          </div>
+
+                          {/* Preview del contenido OCR si existe */}
+                          {documento.contenidoExtraido && (
+                            <p className="text-sm text-theme-tertiary mt-1 line-clamp-2">
+                              {documento.contenidoExtraido.substring(0, 150)}...
+                            </p>
+                          )}
+
+                          <div className="flex items-center gap-4 mt-2 text-xs text-theme-tertiary">
+                            {documento.expediente && (
+                              <span className="flex items-center gap-1">
+                                <FolderOpen className="w-3 h-3" />
+                                {documento.expediente.numeroExpediente}
+                              </span>
+                            )}
+                            {documento.usuario && (
+                              <span className="flex items-center gap-1">
+                                <User className="w-3 h-3" />
+                                {documento.usuario.nombre}
+                              </span>
+                            )}
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {new Date(documento.createdAt).toLocaleDateString('es-ES')}
+                            </span>
+                            <span>{documentoService.formatFileSize(documento.tamano)}</span>
+                          </div>
+
+                          {/* Entidades detectadas */}
+                          {documento.metadata?.ocr?.entities && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {documento.metadata.ocr.entities.dates?.slice(0, 2).map((date, i) => (
+                                <span key={i} className="px-2 py-0.5 text-xs rounded bg-amber-500/10 text-amber-500">
+                                  📅 {date}
+                                </span>
+                              ))}
+                              {documento.metadata.ocr.entities.amounts?.slice(0, 2).map((amount, i) => (
+                                <span key={i} className="px-2 py-0.5 text-xs rounded bg-emerald-500/10 text-emerald-500">
+                                  💰 {amount}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => handleDescargar(e, documento)}
+                            className="p-2 text-theme-tertiary hover:text-amber-500 transition-colors"
+                            title="Descargar"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                          <button
+                            className="p-2 text-theme-tertiary hover:text-amber-500 transition-colors"
+                            title="Ver detalle"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mensaje inicial */}
+        {!hasSearched && (
+          <div className="bg-theme-secondary rounded-xl border border-theme p-12 text-center">
+            <Search className="w-16 h-16 text-theme-tertiary mx-auto mb-4" />
+            <p className="text-xl font-medium text-theme-primary">Buscar en documentos</p>
+            <p className="text-theme-secondary mt-2">
+              Introduce términos de búsqueda para encontrar documentos en todo el repositorio.
+              <br />
+              La búsqueda incluye el texto extraído por OCR de PDFs e imágenes.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Toasts */}
+      <div className="fixed bottom-6 right-6 space-y-2 z-50">
+        {toasts.map(toast => (
           <motion.div
-            initial={{ scale: 0.95 }}
-            animate={{ scale: 1 }}
-            className="bg-theme-secondary border border-theme rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+            key={toast.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${
+              toast.type === 'success'
+                ? 'bg-emerald-500 text-white'
+                : toast.type === 'error'
+                ? 'bg-red-500 text-white'
+                : 'bg-amber-500 text-white'
+            }`}
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <span className="text-4xl">{getTipoIcon(selectedDoc.tipo)}</span>
-                <div>
-                  <h2 className="text-xl font-bold text-theme-primary">{selectedDoc.nombre}</h2>
-                  <p className="text-theme-secondary">{selectedDoc.caso}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedDoc(null)}
-                className="p-2 text-theme-muted hover:text-theme-primary hover:bg-theme-tertiary rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-theme-tertiary/50 rounded-xl">
-                  <p className="text-xs text-theme-muted">Expediente</p>
-                  <p className="text-theme-primary font-medium">{selectedDoc.expediente}</p>
-                </div>
-                <div className="p-3 bg-theme-tertiary/50 rounded-xl">
-                  <p className="text-xs text-theme-muted">Fecha</p>
-                  <p className="text-theme-primary font-medium">{new Date(selectedDoc.fecha).toLocaleDateString('es-ES')}</p>
-                </div>
-                <div className="p-3 bg-theme-tertiary/50 rounded-xl">
-                  <p className="text-xs text-theme-muted">Autor</p>
-                  <p className="text-theme-primary font-medium">{selectedDoc.autor}</p>
-                </div>
-                <div className="p-3 bg-theme-tertiary/50 rounded-xl">
-                  <p className="text-xs text-theme-muted">Tamaño</p>
-                  <p className="text-theme-primary font-medium">{selectedDoc.tamano}</p>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs text-theme-muted mb-2">Contenido</p>
-                <div className="p-4 bg-theme-tertiary/50 rounded-xl">
-                  <p className="text-theme-primary text-sm leading-relaxed">{selectedDoc.contenido}</p>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                {selectedDoc.tags.map(tag => (
-                  <span key={tag} className="px-3 py-1 text-sm rounded-full bg-accent/10 text-accent">
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-
-              <div className="flex gap-3 pt-4 border-t border-theme">
-                <button className="flex-1 py-2 bg-accent text-white font-medium rounded-xl hover:bg-accent-hover transition-colors flex items-center justify-center gap-2">
-                  <Eye className="w-4 h-4" />
-                  Ver documento
-                </button>
-                <button className="px-4 py-2 border border-theme text-theme-secondary rounded-xl hover:bg-theme-tertiary transition-colors flex items-center justify-center gap-2">
-                  <Download className="w-4 h-4" />
-                  Descargar
-                </button>
-              </div>
-            </div>
+            {toast.type === 'success' ? <Eye className="w-4 h-4" />
+              : toast.type === 'error' ? <AlertCircle className="w-4 h-4" />
+              : <Search className="w-4 h-4" />}
+            <span>{toast.message}</span>
           </motion.div>
-        </motion.div>
-      )}
-    </div>
+        ))}
+      </div>
     </AppLayout>
   );
 }

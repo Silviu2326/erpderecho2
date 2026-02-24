@@ -5,13 +5,17 @@ import {
   Github, Twitter, User, Building2, Phone,
   ArrowLeft, CheckCircle, ChevronRight, ChevronLeft
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Register() {
+  const navigate = useNavigate();
+  const { register } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -29,14 +33,66 @@ export default function Register() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
+  const validateStep = (currentStep: number): boolean => {
+    setError('');
+    
+    if (currentStep === 1) {
+      if (!formData.firstName || !formData.lastName || !formData.email) {
+        setError('Por favor completa todos los campos obligatorios');
+        return false;
+      }
+    } else if (currentStep === 2) {
+      if (!formData.firmName) {
+        setError('Por favor ingresa el nombre del despacho');
+        return false;
+      }
+    } else if (currentStep === 3) {
+      if (formData.password.length < 8) {
+        setError('La contraseña debe tener al menos 8 caracteres');
+        return false;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError('Las contraseñas no coinciden');
+        return false;
+      }
+      if (!formData.acceptTerms) {
+        setError('Debes aceptar los términos de servicio');
+        return false;
+      }
+    }
+    return true;
   };
 
-  const nextStep = () => setStep(prev => Math.min(prev + 1, 3));
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    if (!validateStep(3)) return;
+    
+    setIsLoading(true);
+
+    try {
+      await register({
+        email: formData.email,
+        password: formData.password,
+        nombre: formData.firstName,
+        apellido1: formData.lastName,
+        rol: 'abogado',
+      });
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Error al crear la cuenta');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const nextStep = () => {
+    if (validateStep(step)) {
+      setStep(prev => Math.min(prev + 1, 3));
+    }
+  };
+  
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
   const steps = [
@@ -176,6 +232,17 @@ export default function Register() {
               <span className="px-4 bg-slate-950 text-slate-500">O regístrate con email</span>
             </div>
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl"
+            >
+              <p className="text-red-400 text-sm text-center">{error}</p>
+            </motion.div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
